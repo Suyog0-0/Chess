@@ -576,6 +576,7 @@ bool isKingInCheck(bool isWhiteKing){
     blackPiecesTaken.clear();
     whiteKingPosition = [7,4];
     blackKingPosition = [0,4];
+    isWhiteTurn=true;
     setState(() {
 
     });

@@ -464,8 +464,20 @@ class _GameBoardState extends State<GameBoard> {
       validMoves = [];
     });
 
+    if (isCheckMate(!isWhiteTurn)) {
+      showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("CHECK MATE!"),
+            actions: [
+              TextButton(onPressed: resetGame, child: const Text("Play Again")),
+            ]
+          )
+      );
+
     // change turns
-    isWhiteTurn = !isWhiteTurn;
+
+    }isWhiteTurn = !isWhiteTurn;
   }
 
  //is king in check
@@ -532,6 +544,42 @@ bool isKingInCheck(bool isWhiteKing){
     // jhjh
     return !kingInCheck;
   }
+  // is it check mate
+  bool isCheckMate(bool isWhiteKing){
+    if(!isKingInCheck(isWhiteKing)){
+      return false;
+    }
+    for (int i=0; i<8; i++){
+      for(int j=0; j<8; j++){
+        if(board[i][j]==null || board[i][j]!.isWhite != isWhiteKing){
+          continue;
+        }
+
+        List<List<int>> pieceValidMoves =
+            calculateRealValidMoves(i,j,board[i][j], true);
+
+
+      if(pieceValidMoves.isNotEmpty){
+        return false;
+      }
+    }
+    }
+    return true;
+  }
+
+  //rest to new game
+  void resetGame(){
+    Navigator.pop(context);
+    _initializeBoard();
+    checkStatus = false;
+    whitePiecesTaken.clear();
+    blackPiecesTaken.clear();
+    whiteKingPosition = [7,4];
+    blackKingPosition = [0,4];
+    setState(() {
+
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -551,6 +599,8 @@ bool isKingInCheck(bool isWhiteKing){
               ),
             ),
           ),
+//game status
+        Text(checkStatus ? "CHECK!" : ""),
 
           // chess board
           Expanded(

@@ -810,6 +810,28 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(label, style: const TextStyle(fontSize: 14)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+
+
+
   void _showWinDialog() {
     _confettiController.play();
     _playSound('victory.mp3');
@@ -1384,6 +1406,8 @@ class _GameBoardState extends State<GameBoard> {
               ),
 
 
+
+
               // Chess board with coordinates
               Expanded(
                 child: LayoutBuilder(                       // ← NEW
@@ -1542,6 +1566,8 @@ class _GameBoardState extends State<GameBoard> {
 
 
 
+
+
               // Black pieces taken
               SizedBox(
                 height: 30,
@@ -1557,60 +1583,59 @@ class _GameBoardState extends State<GameBoard> {
                 ),
               ),
 
+
+
+
+
               // Bottom action bar
+// Bottom action bar
               Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey[800] : Colors.white,
+                  color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ElevatedButton.icon(
+                    _buildActionButton(
+                      icon: Icons.refresh,
+                      label: 'New Game',
+                      color: Colors.green,
                       onPressed: _showNewGameDialog,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('New Game'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                      ),
                     ),
-                    ElevatedButton.icon(
+                    _buildActionButton(
+                      icon: Icons.palette,
+                      label: 'Themes',
+                      color: Colors.blue,
                       onPressed: _showThemeDialog,
-                      icon: const Icon(Icons.palette),
-                      label: const Text('Themes'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                      ),
                     ),
-                    ElevatedButton.icon(
+                    _buildActionButton(
+                      icon: Icons.home,
+                      label: 'Main Menu',
+                      color: Colors.orange,
                       onPressed: () {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) => const LoginScreen()),
-                          (route) => false,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              (route) => false,
                         );
                       },
-                      icon: const Icon(Icons.home),
-                      label: const Text('Main Menu'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isDarkMode ? Colors.grey[600] : Colors.grey[400],
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                      ),
                     ),
                   ],
                 ),
               ),
+
+
+
+
+
             ],
           ),
         ],

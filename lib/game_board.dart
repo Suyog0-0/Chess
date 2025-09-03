@@ -1166,6 +1166,14 @@ class _GameBoardState extends State<GameBoard> {
           color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
           fontSize: 12,
           fontWeight: FontWeight.bold,
+          // Add a slight shadow for better visibility
+          shadows: [
+            Shadow(
+              offset: const Offset(1, 1),
+              blurRadius: 2,
+              color: isDarkMode ? Colors.black : Colors.white,
+            ),
+          ],
         ),
       ),
     );
@@ -1375,142 +1383,164 @@ class _GameBoardState extends State<GameBoard> {
                 ),
               ),
 
+
               // Chess board with coordinates
               Expanded(
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Stack(
-                    children: [
-                      // The chess board
-                      GridView.builder(
-                        itemCount: 8 * 8,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 8),
-                        itemBuilder: (context, index) {
-                          final row = index ~/ 8;
-                          final col = index % 8;
-                          final isSelected =
-                              selectedRow == row && selectedCol == col;
-                          final isValidMove = validMoves.any((position) =>
-                              position[0] == row && position[1] == col);
-                          final isCapturable = isValidMove &&
-                              board[row][col] != null &&
-                              board[row][col]!.isWhite != isWhiteTurn;
+                child: LayoutBuilder(                       // ← NEW
+                  builder: (context, constraints) {        // ← NEW
+                    final boardSide = constraints.maxWidth < constraints.maxHeight
+                        ? constraints.maxWidth
+                        : constraints.maxHeight;           // keep it square
+                    final margin = 8.0;                    // match old margin
+                    final coordSize = 20.0;                // width/height for labels
 
-                          // FIXED: Only show check highlight for the king that is actually in check
-                          bool isKingInCheck = false;
-                          if (checkStatus) {
-                            // White king is in check
-                            if (isWhiteTurn &&
-                                board[row][col]?.type == ChessPieceType.king &&
-                                board[row][col]?.isWhite == true &&
-                                row == whiteKingPosition[0] &&
-                                col == whiteKingPosition[1]) {
-                              isKingInCheck = true;
-                            }
-                            // Black king is in check
-                            else if (!isWhiteTurn &&
-                                board[row][col]?.type == ChessPieceType.king &&
-                                board[row][col]?.isWhite == false &&
-                                row == blackKingPosition[0] &&
-                                col == blackKingPosition[1]) {
-                              isKingInCheck = true;
-                            }
-                          }
+                    return Center(
+                      child: SizedBox(
+                        width: boardSide,
+                        height: boardSide,
+                        child: Stack(
+                          children: [
+                            // BOARD (inside the border)
+                            Container(
+                              margin: EdgeInsets.fromLTRB(
+                                  coordSize, coordSize, coordSize, coordSize),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.grey[600]!
+                                      : Colors.grey[400]!,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: GridView.builder(
+                                  itemCount: 8 * 8,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 8),
+                                  itemBuilder: (context, index) {
+                                    final row = index ~/ 8;
+                                    final col = index % 8;
+                                    final isSelected =
+                                        selectedRow == row && selectedCol == col;
+                                    final isValidMove = validMoves.any((p) =>
+                                    p[0] == row && p[1] == col);
+                                    final isCapturable = isValidMove &&
+                                        board[row][col] != null &&
+                                        board[row][col]!.isWhite != isWhiteTurn;
 
-                          return Square(
-                            isWhite: isWhite(index),
-                            piece: board[row][col],
-                            isSelected: isSelected,
-                            isValidMove: isValidMove,
-                            isCapturable: isCapturable,
-                            isKingInCheck: isKingInCheck,
-                            onTap: () => pieceSelected(row, col),
-                            isDarkMode: isDarkMode,
-                            boardColors: boardThemes[selectedBoardTheme],
-                          );
-                        },
+                                    bool isKingInCheck = false;
+                                    if (checkStatus) {
+                                      if (isWhiteTurn &&
+                                          board[row][col]?.type ==
+                                              ChessPieceType.king &&
+                                          board[row][col]?.isWhite == true &&
+                                          row == whiteKingPosition[0] &&
+                                          col == whiteKingPosition[1]) {
+                                        isKingInCheck = true;
+                                      } else if (!isWhiteTurn &&
+                                          board[row][col]?.type ==
+                                              ChessPieceType.king &&
+                                          board[row][col]?.isWhite == false &&
+                                          row == blackKingPosition[0] &&
+                                          col == blackKingPosition[1]) {
+                                        isKingInCheck = true;
+                                      }
+                                    }
+
+                                    return Square(
+                                      isWhite: isWhite(index),
+                                      piece: board[row][col],
+                                      isSelected: isSelected,
+                                      isValidMove: isValidMove,
+                                      isCapturable: isCapturable,
+                                      isKingInCheck: isKingInCheck,
+                                      onTap: () => pieceSelected(row, col),
+                                      isDarkMode: isDarkMode,
+                                      boardColors:
+                                      boardThemes[selectedBoardTheme],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+
+                            // COORDINATES (drawn on top, exact size)
+                            if (showCoordinates) ...[
+                              // TOP files
+                              Positioned(
+                                left: coordSize,
+                                right: coordSize,
+                                top: 0,
+                                height: coordSize,
+                                child: Row(
+                                  children: List.generate(
+                                      8,
+                                          (i) => Expanded(
+                                          child: _buildCoordinateLabel(
+                                              true, i))),
+                                ),
+                              ),
+                              // BOTTOM files
+                              Positioned(
+                                left: coordSize,
+                                right: coordSize,
+                                bottom: 0,
+                                height: coordSize,
+                                child: Row(
+                                  children: List.generate(
+                                      8,
+                                          (i) => Expanded(
+                                          child: _buildCoordinateLabel(
+                                              true, i))),
+                                ),
+                              ),
+                              // LEFT ranks
+                              Positioned(
+                                top: coordSize,
+                                bottom: coordSize,
+                                left: 0,
+                                width: coordSize,
+                                child: Column(
+                                  children: List.generate(
+                                      8,
+                                          (i) => Expanded(
+                                          child: _buildCoordinateLabel(
+                                              false, i))),
+                                ),
+                              ),
+                              // RIGHT ranks
+                              Positioned(
+                                top: coordSize,
+                                bottom: coordSize,
+                                right: 0,
+                                width: coordSize,
+                                child: Column(
+                                  children: List.generate(
+                                      8,
+                                          (i) => Expanded(
+                                          child: _buildCoordinateLabel(
+                                              false, i))),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-
-                      // Coordinate labels
-// Lines around 1350-1420
-// Coordinate labels
-                      if (showCoordinates) ...[
-                        // Top coordinates (files a-h) - positioned outside the board
-                        Positioned(
-                          top: -20,
-                          left: 0,
-                          right: 0,
-                          height: 20,
-                          child: Row(
-                            children: List.generate(
-                                8,
-                                (index) => Expanded(
-                                      child: _buildCoordinateLabel(true, index),
-                                    )),
-                          ),
-                        ),
-
-                        // Bottom coordinates (files a-h) - positioned outside the board
-                        Positioned(
-                          bottom: -20,
-                          left: 0,
-                          right: 0,
-                          height: 20,
-                          child: Row(
-                            children: List.generate(
-                                8,
-                                (index) => Expanded(
-                                      child: _buildCoordinateLabel(true, index),
-                                    )),
-                          ),
-                        ),
-
-                        // Left coordinates (ranks 8-1) - positioned outside the board
-                        Positioned(
-                          top: 0,
-                          bottom: 0,
-                          left: -20,
-                          width: 20,
-                          child: Column(
-                            children: List.generate(
-                                8,
-                                (index) => Expanded(
-                                      child:
-                                          _buildCoordinateLabel(false, index),
-                                    )),
-                          ),
-                        ),
-
-                        // Right coordinates (ranks 8-1) - positioned outside the board
-                        Positioned(
-                          top: 0,
-                          bottom: 0,
-                          right: -20,
-                          width: 20,
-                          child: Column(
-                            children: List.generate(
-                                8,
-                                (index) => Expanded(
-                                      child:
-                                          _buildCoordinateLabel(false, index),
-                                    )),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
+
+
+
+
+
+
+
 
               // Black pieces taken
               SizedBox(

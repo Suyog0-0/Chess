@@ -5,5 +5,5 @@ bool isInBoard(int row, int col) {
 bool isWhite(int index) {
   final row = index ~/ 8;
   final col = index % 8;
-  return (row + col) % 2 == 0;
+  return (row + col) % 2 == 1;;
 }

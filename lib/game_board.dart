@@ -72,7 +72,9 @@ class _GameBoardState extends State<GameBoard> {
     const Color(0xFF1A237E), // Deep blue
     const Color(0xFF4A148C), // Deep purple
     const Color(0xFF1B5E20), // Deep green
-    const Color(0xFFBF360C), // Deep orange,
+    const Color(0xFFBF360C), // Deep orange
+    Colors.teal[800]!, // Teal (matching settings)
+    Colors.brown[800]!, // Brown (matching settings)
   ];
 
   // Castling tracking
@@ -978,186 +980,913 @@ class _GameBoardState extends State<GameBoard> {
     });
   }
 
+
+
+
+  // NewGame Dialog
   void _showNewGameDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: backgroundThemes[selectedBackgroundTheme],
-        title: const Text(
-          'New Game',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Start a new game? Current progress will be lost.',
-              style: TextStyle(color: Colors.grey[300]),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Checkbox(
-                  value: isPlayingAgainstAI,
-                  onChanged: (value) {
-                    setState(() {
-                      isPlayingAgainstAI = value ?? false;
-                    });
-                    _saveSettings();
-                  },
-                  activeColor: Colors.green,
-                ),
-                const Text(
-                  'Play against AI',
-                  style: TextStyle(color: Colors.white),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          backgroundColor: backgroundThemes[selectedBackgroundTheme],
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.85,
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: backgroundThemes[selectedBackgroundTheme],
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 30,
+                  spreadRadius: 8,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              resetGame();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child:
-                const Text('New Game', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title with icon
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.sports_esports,
+                        color: Colors.green,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'New Game',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
 
-  void _showThemeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: backgroundThemes[selectedBackgroundTheme],
-        title:
-            const Text('Choose Theme', style: TextStyle(color: Colors.white)),
-        content: Container(
-          width: double.maxFinite,
-          height: 400,
-          child: Column(
-            children: [
-              Text('Board Colors',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3),
-                  itemCount: boardThemes.length,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedBoardTheme = index;
-                        });
-                        _saveSettings();
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: selectedBoardTheme == index
-                                ? Colors.yellow
-                                : Colors.grey,
-                            width: selectedBoardTheme == index ? 3 : 1,
+                const SizedBox(height: 24),
+
+                // Enhanced divider
+                Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.grey[600]!,
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Warning message with better styling
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Starting a new game will reset current progress',
+                          style: TextStyle(
+                            color: Colors.grey[300],
+                            fontSize: 16,
+                            height: 1.4,
                           ),
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                      child: Container(
-                                          color: boardThemes[index][0])),
-                                  Expanded(
-                                      child: Container(
-                                          color: boardThemes[index][1])),
-                                ],
-                              ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // Game mode selection with improved design
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.grey[700]!.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Text(
+                          'Game Mode',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                      // VS Friend Option
+                      GestureDetector(
+                        onTap: () {
+                          setDialogState(() {
+                            isPlayingAgainstAI = false;
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: !isPlayingAgainstAI
+                                ? Colors.green.withOpacity(0.2)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: !isPlayingAgainstAI
+                                  ? Colors.green
+                                  : Colors.transparent,
+                              width: 2,
                             ),
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                      child: Container(
-                                          color: boardThemes[index][1])),
-                                  Expanded(
-                                      child: Container(
-                                          color: boardThemes[index][0])),
-                                ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: !isPlayingAgainstAI
+                                      ? Colors.green
+                                      : Colors.grey[700],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.people,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'vs Friend',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Play with another person',
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (!isPlayingAgainstAI)
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 24,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // VS AI Option
+                      GestureDetector(
+                        onTap: () {
+                          setDialogState(() {
+                            isPlayingAgainstAI = true;
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isPlayingAgainstAI
+                                ? Colors.blue.withOpacity(0.2)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isPlayingAgainstAI
+                                  ? Colors.blue
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isPlayingAgainstAI
+                                      ? Colors.blue
+                                      : Colors.grey[700],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.smart_toy,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'vs AI Bot',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Challenge the computer',
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isPlayingAgainstAI)
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.blue,
+                                  size: 24,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Enhanced buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(color: Colors.grey[600]!, width: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.close, size: 18),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text('Background Colors',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3),
-                  itemCount: backgroundThemes.length,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedBackgroundTheme = index;
-                        });
-                        _saveSettings();
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: backgroundThemes[index],
-                          border: Border.all(
-                            color: selectedBackgroundTheme == index
-                                ? Colors.yellow
-                                : Colors.grey,
-                            width: selectedBackgroundTheme == index ? 3 : 1,
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            // Apply the selected AI mode from dialog state
+                            // (isPlayingAgainstAI is already set by the dialog)
+                          });
+                          _saveSettings();
+                          Navigator.pop(context);
+                          resetGame();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          elevation: 4,
+                          shadowColor: Colors.green.withOpacity(0.3),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.play_arrow, size: 18),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Start Game',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+// Theme Dialog
+  void _showThemeDialog() {
+    int tempBoardTheme = selectedBoardTheme;
+    int tempBackgroundTheme = selectedBackgroundTheme;
+
+    // Theme names for better UX
+    final List<String> boardThemeNames = [
+      'Classic Gray',
+      'Wooden Brown',
+      'Blue Slate',
+      'Pink Rose',
+      'Forest Green',
+      'Amber Gold',
+    ];
+
+    final List<String> backgroundThemeNames = [
+      'Midnight',
+      'Dark Wood',
+      'Deep Ocean',
+      'Royal Purple',
+      'Forest',
+      'Crimson',
+      'Teal Ocean',
+      'Rich Brown',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.all(16),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                ),
+                decoration: BoxDecoration(
+                  color: backgroundThemes[tempBackgroundTheme],
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.6),
+                      blurRadius: 30,
+                      spreadRadius: 10,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Enhanced Header
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.purple.shade600,
+                              Colors.blue.shade600,
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.palette,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Themes',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Choose your perfect color combination',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.black.withOpacity(0.2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Content Area
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Board Themes Section
+                              _buildThemeSection(
+                                title: 'Chess Board Colors',
+                                icon: Icons.grid_view,
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        childAspectRatio: 0.85,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12,
+                                      ),
+                                      itemCount: boardThemes.length,
+                                      itemBuilder: (context, index) {
+                                        final isSelected = tempBoardTheme == index;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setStateDialog(() {
+                                              tempBoardTheme = index;
+                                            });
+                                          },
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? Colors.amber.withOpacity(0.2)
+                                                  : Colors.black.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? Colors.amber
+                                                    : Colors.grey[600]!,
+                                                width: isSelected ? 3 : 1,
+                                              ),
+                                              boxShadow: isSelected ? [
+                                                BoxShadow(
+                                                  color: Colors.amber.withOpacity(0.3),
+                                                  blurRadius: 8,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ] : null,
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                // Chess board preview
+                                                Expanded(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      border: Border.all(
+                                                        color: Colors.grey[400]!,
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: ClipRRect(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      child: GridView.builder(
+                                                        physics: const NeverScrollableScrollPhysics(),
+                                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                                          crossAxisCount: 4,
+                                                        ),
+                                                        itemCount: 16,
+                                                        itemBuilder: (context, squareIndex) {
+                                                          final row = squareIndex ~/ 4;
+                                                          final col = squareIndex % 4;
+                                                          final isWhiteSquare = (row + col) % 2 == 0;
+                                                          return Container(
+                                                            color: isWhiteSquare
+                                                                ? boardThemes[index][0]
+                                                                : boardThemes[index][1],
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  boardThemeNames[index],
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.bold
+                                                        : FontWeight.w500,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                if (isSelected)
+                                                  Container(
+                                                    margin: const EdgeInsets.only(top: 4),
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.amber,
+                                                      borderRadius: BorderRadius.circular(10),
+                                                    ),
+                                                    child: Text(
+                                                      'SELECTED',
+                                                      style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              // Background Themes Section - FIXED VERSION
+                              _buildThemeSection(
+                                title: 'Background Colors',
+                                icon: Icons.format_paint,
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 4,
+                                        childAspectRatio: 0.7, // Changed from 1.1 to 0.9
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12,
+                                      ),
+                                      itemCount: backgroundThemes.length,
+                                      itemBuilder: (context, index) {
+                                        final isSelected = tempBackgroundTheme == index;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setStateDialog(() {
+                                              tempBackgroundTheme = index;
+                                            });
+                                          },
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            padding: const EdgeInsets.all(4), // Changed from 6 to 4
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? Colors.blue.withOpacity(0.2)
+                                                  : Colors.black.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? Colors.blue
+                                                    : Colors.grey[600]!,
+                                                width: isSelected ? 3 : 1,
+                                              ),
+                                              boxShadow: isSelected ? [
+                                                BoxShadow(
+                                                  color: Colors.blue.withOpacity(0.3),
+                                                  blurRadius: 8,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ] : null,
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min, // Added
+                                              children: [
+                                                // Fixed height background color preview - CHANGED TO EXPANDED
+                                                Expanded(
+                                                  flex: 3, // Takes 3/5 of available space
+                                                  child: Container(
+                                                    width: double.infinity,
+                                                    decoration: BoxDecoration(
+                                                      color: backgroundThemes[index],
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      border: Border.all(
+                                                        color: Colors.white.withOpacity(0.3),
+                                                        width: 2,
+                                                      ),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black.withOpacity(0.3),
+                                                          blurRadius: 4,
+                                                          offset: Offset(0, 2),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4), // Changed from 6 to 4
+                                                // Text and selected indicator - WRAPPED IN EXPANDED
+                                                Expanded(
+                                                  flex: 2, // Takes 2/5 of available space
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text(
+                                                        backgroundThemeNames[index],
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 8, // Reduced further to make space
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.bold
+                                                              : FontWeight.w500,
+                                                        ),
+                                                        textAlign: TextAlign.center,
+                                                        maxLines: 1, // Changed to 1 line only
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      if (isSelected) ...[
+                                                        const SizedBox(height: 2),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                            horizontal: 3,
+                                                            vertical: 1,
+                                                          ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.blue,
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: Text(
+                                                            'ACTIVE',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 5, // Made even smaller
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ] else ...[
+                                                        // Add invisible spacer when not selected to maintain consistent height
+                                                        const SizedBox(height: 1),
+                                                        Container(
+                                                          height: 10, // Reduced from 12 to 10
+                                                          width: 1,
+                                                          color: Colors.transparent,
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Action Buttons
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.2),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: BorderSide(color: Colors.grey[500]!, width: 2),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.close, size: 18),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedBoardTheme = tempBoardTheme;
+                                    selectedBackgroundTheme = tempBackgroundTheme;
+                                  });
+                                  _saveSettings();
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green[600],
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 4,
+                                  shadowColor: Colors.green.withOpacity(0.3),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check, size: 18),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Apply Theme',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+// Helper method for theme sections
+  Widget _buildThemeSection({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey[600]!.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: Colors.white)),
-          ),
+          child,
         ],
       ),
     );
   }
+
+
+
 
   // New method to toggle AI mode
   void _toggleAIMode() {
@@ -1275,7 +2004,21 @@ class _GameBoardState extends State<GameBoard> {
                       });
                       _saveSettings();
                     },
+                    onBackgroundColorChanged: (index) {
+                      setState(() {
+                        selectedBackgroundTheme = index;
+                      });
+                      _saveSettings();
+                    },
+                    onBoardThemeChanged: (index) {
+                      setState(() {
+                        selectedBoardTheme = index;
+                      });
+                      _saveSettings();
+                    },
                   ),
+
+
                 ),
               );
             },
@@ -1410,13 +2153,13 @@ class _GameBoardState extends State<GameBoard> {
 
               // Chess board with coordinates
               Expanded(
-                child: LayoutBuilder(                       // ← NEW
-                  builder: (context, constraints) {        // ← NEW
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
                     final boardSide = constraints.maxWidth < constraints.maxHeight
                         ? constraints.maxWidth
-                        : constraints.maxHeight;           // keep it square
-                    final margin = 8.0;                    // match old margin
-                    final coordSize = 20.0;                // width/height for labels
+                        : constraints.maxHeight;
+                    final margin = 8.0;
+                    final coordSize = 20.0;
 
                     return Center(
                       child: SizedBox(
@@ -1558,7 +2301,6 @@ class _GameBoardState extends State<GameBoard> {
                   },
                 ),
               ),
-
 
 
 

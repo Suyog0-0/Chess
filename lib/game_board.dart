@@ -686,34 +686,6 @@ class _GameBoardState extends State<GameBoard> {
       _playSound('move.mp3');
     }
 
-    void _showStalemateDialog() {
-      _confettiController.play();
-      _playSound('stalemate.mp3');
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => StalemateScreen(
-          moveCount: moveCount,
-          gameDuration: DateTime.now().difference(gameStartTime!),
-          whitePiecesCaptured: whitePiecesTaken.length,
-          blackPiecesCaptured: blackPiecesTaken.length,
-          wasPlayingAgainstAI: isPlayingAgainstAI,
-          onPlayAgain: () {
-            Navigator.pop(context);
-            resetGame();
-          },
-          onBackToMenu: () {
-            Navigator.pop(context);
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-            );
-          },
-        ),
-      );
-    }
 
 
 
@@ -1303,6 +1275,228 @@ class _GameBoardState extends State<GameBoard> {
       moveHistory.clear();
     });
   }
+
+
+
+  void _resignGame() {
+    if (isGameOver) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85,
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: backgroundThemes[selectedBackgroundTheme],
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.6),
+                blurRadius: 30,
+                spreadRadius: 10,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.red.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  Icons.flag_rounded,
+                  size: 40,
+                  color: Colors.red[300],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Title
+              Text(
+                'Resign Game',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Message
+              Text(
+                'Are you sure you want to resign?\nThis will end the current game.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[300],
+                  fontSize: 16,
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // Stats Container
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.grey[700]!,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _buildResignStatRow(
+                      icon: Icons.timer,
+                      label: 'Game Duration:',
+                      value: _formatDuration(DateTime.now().difference(gameStartTime!)),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildResignStatRow(
+                      icon: Icons.loop,
+                      label: 'Total Moves:',
+                      value: '$moveCount',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildResignStatRow(
+                      icon: Icons.people,
+                      label: 'Mode:',
+                      value: isPlayingAgainstAI ? 'VS AI' : 'VS Friend',
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // Buttons
+              Row(
+                children: [
+                  // Cancel Button
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.transparent,
+                        side: BorderSide(
+                          color: Colors.grey[600]!,
+                          width: 2,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  // Resign Button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() {
+                          isGameOver = true;
+                          winner = isWhiteTurn ? 'Black' : 'White';
+                        });
+                        _playSound('resign.mp3');
+                        _showWinDialog();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                        shadowColor: Colors.red.withOpacity(0.3),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.flag, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Resign',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+// Helper method for stat rows in resign dialog
+  Widget _buildResignStatRow({required IconData icon, required String label, required String value}) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: Colors.grey[400],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+
 
   void _showNewGameDialog() {
     showDialog(
@@ -2567,6 +2761,13 @@ class _GameBoardState extends State<GameBoard> {
         ),
         // Remove centerTitle: true to allow left alignment
         actions: [
+          // Resign Button
+          _buildAppBarActionButton(
+            icon: Icons.flag,
+            tooltip: 'Resign Game',
+            onPressed: _resignGame,
+          ),
+
           // Hint button
           _buildAppBarActionButton(
             icon: Icons.lightbulb_outline,
@@ -3224,7 +3425,38 @@ class _GameBoardState extends State<GameBoard> {
     _confettiController.dispose();
     super.dispose();
   }
+
+  void _showStalemateDialog() {
+    _confettiController.play();
+    _playSound('stalemate.mp3');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StalemateScreen(
+        moveCount: moveCount,
+        gameDuration: DateTime.now().difference(gameStartTime!),
+        whitePiecesCaptured: whitePiecesTaken.length,
+        blackPiecesCaptured: blackPiecesTaken.length,
+        wasPlayingAgainstAI: isPlayingAgainstAI,
+        onPlayAgain: () {
+          Navigator.pop(context);
+          resetGame();
+        },
+        onBackToMenu: () {
+          Navigator.pop(context);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+          );
+        },
+      ),
+    );
+  }
 }
+
+
 
 class MoveHistory {
   ChessPiece? movedPiece;

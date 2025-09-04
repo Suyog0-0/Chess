@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/* ===========================================================================
+   1.  ENTRY POINT – SETTINGS SCREEN
+   =========================================================================== */
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
   final bool soundEnabled;
@@ -27,6 +30,9 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+/* ===========================================================================
+   2.  STATE – THEME, SOUND, BOARD COLOURS …
+   =========================================================================== */
 class _SettingsScreenState extends State<SettingsScreen> {
   late bool _isDarkMode;
   late bool _soundEnabled;
@@ -37,24 +43,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _selectedBackgroundColorIndex = 0;
   int _selectedBoardTheme = 0;
 
-  List<Color> backgroundColors = [
-    Colors.grey[900]!, // Default dark
-    const Color(0xFF2C1810), // Dark wood
-    const Color(0xFF1A237E), // Deep blue
-    const Color(0xFF4A148C), // Deep purple
-    const Color(0xFF1B5E20), // Deep green
-    const Color(0xFFBF360C), // Deep orange
-    Colors.teal[800]!, // Teal
-    Colors.brown[800]!, // Brown
-  ];
-  List<List<Color>> boardThemes = [
-    [Color(0xFFF0D9B5), Color(0xFFB58863)], // Classic
-    [Color(0xFFDDB88C), Color(0xFFA55A3E)], // Brown
-    [Color(0xFFE8EDF2), Color(0xFF8CA2AD)], // Gray
-    [Color(0xFFBEBEBE), Color(0xFF888888)], // Metal
-    [Color(0xFFFFCE9E), Color(0xFFD18B47)], // Orange
+  final List<Color> _backgroundColors = [
+    Colors.grey[900]!,
+    const Color(0xFF2C1810),
+    const Color(0xFF1A237E),
+    const Color(0xFF4A148C),
+    const Color(0xFF1B5E20),
+    const Color(0xFFBF360C),
+    Colors.teal[800]!,
+    Colors.brown[800]!,
   ];
 
+  final List<List<Color>> _boardThemes = [
+    [const Color(0xFFF0D9B5), const Color(0xFFB58863)],
+    [const Color(0xFFDDB88C), const Color(0xFFA55A3E)],
+    [const Color(0xFFE8EDF2), const Color(0xFF8CA2AD)],
+    [const Color(0xFFBEBEBE), const Color(0xFF888888)],
+    [const Color(0xFFFFCE9E), const Color(0xFFD18B47)],
+  ];
+
+  /* ------------------------------------------
+     2.1  LIFE-CYCLE
+     ------------------------------------------ */
   @override
   void initState() {
     super.initState();
@@ -64,19 +74,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
-  void _loadSettings() async {
+  Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _showCoordinates = prefs.getBool('show_coordinates') ?? true;
       _highlightMoves = prefs.getBool('highlight_moves') ?? true;
-      _showHints = prefs.getBool('show_hints') ?? true;
       _difficulty = prefs.getString('difficulty') ?? 'Medium';
       _selectedBackgroundColorIndex = prefs.getInt('background_color') ?? 0;
       _selectedBoardTheme = prefs.getInt('board_theme') ?? 0;
     });
   }
 
-  void _saveSettings() async {
+  Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('show_coordinates', _showCoordinates);
     await prefs.setBool('highlight_moves', _highlightMoves);
@@ -88,418 +97,448 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt('board_theme', _selectedBoardTheme);
   }
 
-  Widget _buildThemeSelector(String title, List<Color> colors,
-      int selectedIndex, Function(int) onSelect) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: _isDarkMode ? Colors.grey[300] : Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 60,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: colors.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () => onSelect(index),
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: colors[index],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: selectedIndex == index ? Colors.blue : Colors.grey,
-                      width: selectedIndex == index ? 3 : 1,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
+  /* ===========================================================================
+     3.  HELPERS – RESPONSIVE & THEME
+     =========================================================================== */
+  Color get _cardColor => _isDarkMode ? Colors.grey[850]! : Colors.white;
 
-  Widget _buildBoardThemeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Board Theme',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: _isDarkMode ? Colors.grey[300] : Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 80,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: boardThemes.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedBoardTheme = index;
-                  });
-                  widget.onBoardThemeChanged(index);
-                  _saveSettings();
-                },
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _selectedBoardTheme == index
-                          ? Colors.blue
-                          : Colors.grey,
-                      width: _selectedBoardTheme == index ? 3 : 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Expanded(
-                                child: Container(color: boardThemes[index][0])),
-                            Expanded(
-                                child: Container(color: boardThemes[index][1])),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Expanded(
-                                child: Container(color: boardThemes[index][1])),
-                            Expanded(
-                                child: Container(color: boardThemes[index][0])),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
+  Color get _textColor => _isDarkMode ? Colors.white : Colors.black87;
 
+  Color get _subtitleColor => _isDarkMode ? Colors.grey[400]! : Colors.grey[600]!;
+
+  bool get _isDesktop => MediaQuery.of(context).size.width > 800;
+
+  /* ===========================================================================
+     4.  WIDGET – MAIN BUILD
+     =========================================================================== */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.grey[100],
-      appBar: AppBar(
-        title: const Text(
-          'Settings',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: _isDarkMode ? Colors.grey[800] : Colors.white,
-        foregroundColor: _isDarkMode ? Colors.white : Colors.black,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () {
-              _saveSettings();
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.check),
+      backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.grey[50],
+      body: Row(
+        children: [
+          /* ----------------------------------------------------------
+             4.1  SIDE NAV (only desktop)
+             ---------------------------------------------------------- */
+          if (_isDesktop) _sideNav(),
+          /* ----------------------------------------------------------
+             4.2  CONTENT AREA
+             ---------------------------------------------------------- */
+          Expanded(
+            child: LayoutBuilder(
+              builder: (_, constraints) {
+                final horizontalPadding = constraints.maxWidth > 600 ? 40.0 : 24.0;
+                return CustomScrollView(
+                  slivers: [
+                    _appBar(horizontalPadding),
+                    _content(horizontalPadding),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    );
+  }
+
+  /* --------------------------------------------------------------------------
+     4.3  SIDE NAV – DESKTOP
+     -------------------------------------------------------------------------- */
+  Widget _sideNav() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: 220,
+      color: _cardColor,
+      child: Column(
         children: [
-          // Appearance Section
-          _buildSectionHeader('Appearance'),
-          _buildSettingsTile(
-            icon: Icons.dark_mode,
-            title: 'Dark Mode',
-            subtitle: 'Switch between light and dark themes',
-            trailing: Switch(
-              value: _showHints,
-              onChanged: (value) {
-                setState(() {
-                  _showHints = value;
-                });
-                widget.onHintsChanged(value);
+          const SizedBox(height: 24),
+          _navItem(Icons.palette_outlined, 'Appearance', 0),
+          _navItem(Icons.audiotrack_outlined, 'Audio', 1),
+          _navItem(Icons.videogame_asset_outlined, 'Game', 2),
+          _navItem(Icons.info_outline, 'About', 3),
+          const Spacer(),
+          _resetTile(),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _navItem(IconData icon, String label, int index) {
+    return ListTile(
+      leading: Icon(icon, color: _subtitleColor),
+      title: Text(label, style: TextStyle(color: _textColor)),
+      onTap: () => Scrollable.ensureVisible(
+        _sectionKeys[index].currentContext!,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  /* --------------------------------------------------------------------------
+     4.4  APP-BAR – UNIFIED FOR MOBILE & DESKTOP
+     -------------------------------------------------------------------------- */
+  Widget _appBar(double horizontalPadding) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+        child: Row(
+          children: [
+            if (!_isDesktop)
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new),
+                onPressed: () => Navigator.pop(context),
+              ),
+            const Spacer(),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Text(
+                'Settings',
+                key: ValueKey(_isDarkMode),
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: _textColor,
+                ),
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.check_rounded),
+              tooltip: 'Save',
+              onPressed: () {
                 _saveSettings();
+                Navigator.pop(context);
               },
-              activeColor: Colors.green,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /* --------------------------------------------------------------------------
+     4.5  CONTENT – SECTIONS
+     -------------------------------------------------------------------------- */
+  final List<GlobalKey> _sectionKeys = List.generate(4, (_) => GlobalKey());
+
+  Widget _content(double horizontalPadding) {
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate(
+          [
+            _section('Appearance', _appearanceSection(), 0),
+            const SizedBox(height: 32),
+            _section('Audio', _audioSection(), 1),
+            const SizedBox(height: 32),
+            _section('Game Settings', _gameSection(), 2),
+            const SizedBox(height: 32),
+            _section('About', _aboutSection(), 3),
+            const SizedBox(height: 48),
+            if (!_isDesktop) _resetTile(),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _section(String title, Widget child, int index) {
+    return Column(
+      key: _sectionKeys[index],
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 400),
+          opacity: 1,
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: _textColor,
             ),
           ),
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
+    );
+  }
 
-          // Background Color Selector
-          _buildThemeSelector(
-            'Background Color',
-            backgroundColors,
-            _selectedBackgroundColorIndex,
-                (index) {
-              setState(() {
-                _selectedBackgroundColorIndex = index;
-              });
-              widget.onBackgroundColorChanged(index);
+  /* --------------------------------------------------------------------------
+     5.  SECTION WIDGETS
+     -------------------------------------------------------------------------- */
+  Widget _appearanceSection() {
+    return _card(
+      children: [
+        _toggle('Dark Mode', _isDarkMode, (v) {
+          setState(() => _isDarkMode = v);
+          widget.onThemeChanged(v);
+          _saveSettings();
+        }),
+        _divider(),
+        _toggle('Show Hints', _showHints, (v) {
+          setState(() => _showHints = v);
+          widget.onHintsChanged(v);
+          _saveSettings();
+        }),
+        _divider(),
+        const SizedBox(height: 12),
+        _colorSelector('Background Colour', _backgroundColors,
+            _selectedBackgroundColorIndex, (i) {
+              setState(() => _selectedBackgroundColorIndex = i);
+              widget.onBackgroundColorChanged(i);
+              _saveSettings();
+            }),
+        const SizedBox(height: 12),
+        _boardSelector(),
+      ],
+    );
+  }
+
+  Widget _audioSection() {
+    return _card(
+      children: [
+        _toggle('Sound Effects', _soundEnabled, (v) {
+          setState(() => _soundEnabled = v);
+          widget.onSoundChanged(v);
+          _saveSettings();
+        }),
+      ],
+    );
+  }
+
+  Widget _gameSection() {
+    return _card(
+      children: [
+        _toggle('Show Coordinates', _showCoordinates, (v) {
+          setState(() => _showCoordinates = v);
+          _saveSettings();
+        }),
+        _divider(),
+        _toggle('Highlight Valid Moves', _highlightMoves, (v) {
+          setState(() => _highlightMoves = v);
+          _saveSettings();
+        }),
+        _divider(),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text('AI Difficulty', style: TextStyle(color: _textColor)),
+          trailing: DropdownButton<String>(
+            value: _difficulty,
+            dropdownColor: _cardColor,
+            style: TextStyle(color: _textColor),
+            items: const [
+              DropdownMenuItem(value: 'Easy', child: Text('Easy')),
+              DropdownMenuItem(value: 'Medium', child: Text('Medium')),
+              DropdownMenuItem(value: 'Hard', child: Text('Hard')),
+            ],
+            onChanged: (v) {
+              setState(() => _difficulty = v!);
               _saveSettings();
             },
           ),
+        ),
+      ],
+    );
+  }
 
-          _buildBoardThemeSelector(),
-
-          // // Sound Section
-          // const SizedBox(height: 20),
-          // _buildSectionHeader('Appearance'),
-          // _buildSettingsTile(
-          //   icon: Icons.dark_mode,
-          //   title: 'Dark Mode',
-          //   subtitle: 'Switch between light and dark themes',
-          //   trailing: Switch(
-          //     value: _isDarkMode,
-          //     onChanged: (value) {
-          //       setState(() {
-          //         _isDarkMode = value;
-          //       });
-          //       widget.onThemeChanged(value);
-          //       _saveSettings();
-          //     },
-          //     activeColor: Colors.green,
-          //   ),
-          // ),
-
-
-          // _buildBoardThemeSelector(),
-
-          // Sound Section
-          const SizedBox(height: 20),
-          _buildSectionHeader('Audio'),
-          _buildSettingsTile(
-            icon: Icons.volume_up,
-            title: 'Sound Effects',
-            subtitle: 'Enable game sounds and music',
-            trailing: Switch(
-              value: _soundEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _soundEnabled = value;
-                });
-                widget.onSoundChanged(value);
-                _saveSettings();
-              },
-              activeColor: Colors.green,
-            ),
+  Widget _aboutSection() {
+    return _card(
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.info_outline, color: _subtitleColor),
+          title: Text('Version', style: TextStyle(color: _textColor)),
+          subtitle: Text('1.0.0', style: TextStyle(color: _subtitleColor)),
+        ),
+        _divider(),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.star_outline, color: _subtitleColor),
+          title: Text('Rate This App', style: TextStyle(color: _textColor)),
+          subtitle:
+          Text('Enjoying the game? Leave a review!', style: TextStyle(color: _subtitleColor)),
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Coming soon!')),
           ),
+        ),
+      ],
+    );
+  }
 
-          // Game Settings Section
-          const SizedBox(height: 20),
-          _buildSectionHeader('Game Settings'),
-          _buildSettingsTile(
-            icon: Icons.grid_on,
-            title: 'Show Coordinates',
-            subtitle: 'Display board coordinates (a-h, 1-8)',
-            trailing: Switch(
-              value: _showCoordinates,
-              onChanged: (value) {
-                setState(() {
-                  _showCoordinates = value;
-                });
-                _saveSettings();
-              },
-              activeColor: Colors.green,
-            ),
+  /* --------------------------------------------------------------------------
+     6.  RE-USABLE UI FRAGMENTS
+     -------------------------------------------------------------------------- */
+  Widget _card({required List<Widget> children}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(children: children),
+      ),
+    );
+  }
 
-          _buildSettingsTile(
-            icon: Icons.highlight,
-            title: 'Highlight Valid Moves',
-            subtitle: 'Show possible moves for selected piece',
-            trailing: Switch(
-              value: _highlightMoves,
-              onChanged: (value) {
-                setState(() {
-                  _highlightMoves = value;
-                });
-                _saveSettings();
-              },
-              activeColor: Colors.green,
-            ),
-          ),
+  Widget _toggle(String title, bool value, ValueChanged<bool> onTap) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title, style: TextStyle(color: _textColor)),
+      trailing: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Switch(
+          key: ValueKey(value),
+          value: value,
+          onChanged: onTap,
+          activeColor: Colors.greenAccent,
+        ),
+      ),
+    );
+  }
 
-          _buildSettingsTile(
-            icon: Icons.speed,
-            title: 'AI Difficulty',
-            subtitle: 'Set computer opponent strength',
-            trailing: DropdownButton<String>(
-              value: _difficulty,
-              dropdownColor: _isDarkMode ? Colors.grey[800] : Colors.white,
-              style: TextStyle(
-                color: _isDarkMode ? Colors.white : Colors.black,
-              ),
-              items: const [
-                DropdownMenuItem(value: 'Easy', child: Text('Easy')),
-                DropdownMenuItem(value: 'Medium', child: Text('Medium')),
-                DropdownMenuItem(value: 'Hard', child: Text('Hard')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _difficulty = value!;
-                });
-                _saveSettings();
-              },
-            ),
-          ),
+  Widget _divider() => Divider(height: 1, color: _subtitleColor.withOpacity(.2));
 
-          // About Section
-          const SizedBox(height: 20),
-          _buildSectionHeader('About'),
-          _buildSettingsTile(
-            icon: Icons.info,
-            title: 'Version',
-            subtitle: '1.0.0',
-            onTap: () {},
-          ),
-
-          _buildSettingsTile(
-            icon: Icons.star,
-            title: 'Rate This App',
-            subtitle: 'Enjoying the game? Leave a review!',
-            onTap: () {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'Thank you for your interest! Rating feature coming soon.'),
+  Widget _colorSelector(String title, List<Color> colors, int selected,
+      ValueChanged<int> onTap) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(color: _subtitleColor, fontSize: 14)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 50,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: colors.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) {
+              return GestureDetector(
+                onTap: () => onTap(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: colors[i],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected == i
+                          ? (_isDarkMode ? Colors.white : Colors.black)
+                          : Colors.transparent,
+                      width: 3,
+                    ),
                   ),
-                );
-              }
-            },
-          ),
-
-          // Reset Section
-          const SizedBox(height: 20),
-          _buildSectionHeader('Data'),
-          _buildSettingsTile(
-            icon: Icons.restore,
-            title: 'Reset All Settings',
-            subtitle: 'Restore default settings',
-            textColor: Colors.red,
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Reset Settings'),
-                  content: const Text(
-                      'Are you sure you want to reset all settings to default?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.clear();
-                        if (mounted) {
-                          setState(() {
-                            _showCoordinates = true;
-                            _highlightMoves = true;
-                            _difficulty = 'Medium';
-                            _isDarkMode = true;
-                            _soundEnabled = true;
-                            _selectedBackgroundColorIndex = 0;
-                            _selectedBoardTheme = 0;
-                            _showHints = true;
-                          });
-                          widget.onThemeChanged(true);
-                          widget.onSoundChanged(true);
-                          widget.onBackgroundColorChanged(0);
-                          widget.onBoardThemeChanged(0);
-                          widget.onHintsChanged(true);
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Settings reset to default')),
-                          );
-                        }
-                      },
-                      child: const Text('Reset',
-                          style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
                 ),
               );
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8, top: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: _isDarkMode ? Colors.grey[300] : Colors.grey[700],
+  Widget _boardSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Board Theme', style: TextStyle(color: _subtitleColor, fontSize: 14)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 70,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _boardThemes.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) {
+              final theme = _boardThemes[i];
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedBoardTheme = i);
+                  widget.onBoardThemeChanged(i);
+                  _saveSettings();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _selectedBoardTheme == i
+                          ? (_isDarkMode ? Colors.white : Colors.black)
+                          : Colors.transparent,
+                      width: 3,
+                    ),
+                  ),
+                  child: GridView.count(
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    children: List.generate(4, (j) {
+                      final color = theme[(j + j ~/ 2) % 2];
+                      return Container(color: color);
+                    }),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildSettingsTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    Widget? trailing,
-    VoidCallback? onTap,
-    Color? textColor,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: _isDarkMode ? Colors.grey[800] : Colors.white,
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color:
-          textColor ?? (_isDarkMode ? Colors.grey[300] : Colors.grey[700]),
+  Widget _resetTile() {
+    return ListTile(
+      leading: const Icon(Icons.restore, color: Colors.redAccent),
+      title: const Text('Reset All Settings',
+          style: TextStyle(color: Colors.redAccent)),
+      onTap: () => showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Reset Settings?'),
+          content: const Text('Restore everything to default values?'),
+          actions: [
+            TextButton(onPressed: Navigator.of(context).pop, child: const Text('Cancel')),
+            TextButton(
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+                setState(() {
+                  _isDarkMode = true;
+                  _soundEnabled = true;
+                  _showHints = true;
+                  _showCoordinates = true;
+                  _highlightMoves = true;
+                  _difficulty = 'Medium';
+                  _selectedBackgroundColorIndex = 0;
+                  _selectedBoardTheme = 0;
+                });
+                widget.onThemeChanged(true);
+                widget.onSoundChanged(true);
+                widget.onHintsChanged(true);
+                widget.onBackgroundColorChanged(0);
+                widget.onBoardThemeChanged(0);
+                if (mounted) Navigator.of(context).pop();
+              },
+              child: const Text('Reset', style: TextStyle(color: Colors.redAccent)),
+            ),
+          ],
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: textColor ?? (_isDarkMode ? Colors.white : Colors.black),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
-          ),
-        ),
-        trailing: trailing,
-        onTap: onTap,
       ),
     );
   }

@@ -1140,6 +1140,8 @@ class _GameBoardState extends State<GameBoard> {
 
 
 
+  // Replace lines 1818-1940 with:
+  // Replace lines 1818-1940 with:
   void _showWinDialog() {
     _confettiController.play();
     _playSound('victory.mp3');
@@ -1165,216 +1167,355 @@ class _GameBoardState extends State<GameBoard> {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
             children: [
-              // Header Section
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.amber.shade600,
-                      Colors.orange.shade600,
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(28),
-                    topRight: Radius.circular(28),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // Trophy Icon
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 3,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.emoji_events_rounded,
-                        size: 60,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Title
-                    Text(
-                      'CHECKMATE!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 8,
-                            color: Colors.black.withOpacity(0.3),
-                            offset: const Offset(2, 2),
-                          ),
+              // Animated background elements
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment.topCenter,
+                        radius: 1.5,
+                        colors: [
+                          Colors.amber.withOpacity(0.1),
+                          Colors.transparent,
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // Winner Announcement
-                    Text(
-                      '$winner Wins the Game!',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Stats Section
-              Container(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  children: [
-                    // Stats Title
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.analytics_rounded,
-                          color: Colors.amber.shade400,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'GAME SUMMARY',
-                          style: TextStyle(
-                            color: Colors.grey[300],
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    // Stats Grid
-// Stats Grid
-                    GridView.count(
-                      shrinkWrap: true,
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,  // Reduced from 16
-                      mainAxisSpacing: 10,   // Reduced from 16
-                      childAspectRatio: 2.0, // Reduced from 3.5
-                      children: [
-                        _buildStatCard(
-                          icon: Icons.loop,
-                          label: 'Moves',
-                          value: '$moveCount',      // Shorter label
-                          color: Colors.blue.shade400,
-                        ),
-                        _buildStatCard(
-                          icon: Icons.timer,
-                          label: 'Time',
-                          value: _formatDuration(    // Shorter label
-                              DateTime.now().difference(gameStartTime!)),
-                          color: Colors.green.shade400,
-                        ),
-                        _buildStatCard(
-                          icon: Icons.remove_circle_outline,
-                          label: 'White Taken',      // Shorter label
-                          value: '${whitePiecesTaken.length}',
-                          color: Colors.red.shade400,
-                        ),
-                        _buildStatCard(
-                          icon: Icons.remove_circle_outline,
-                          label: 'Black Taken',      // Shorter label
-                          value: '${blackPiecesTaken.length}',
-                          color: Colors.purple.shade400,
-                        ),
-                        if (isPlayingAgainstAI)
-                          _buildStatCard(
-                            icon: Icons.smart_toy,
-                            label: 'Mode',           // Shorter label
-                            value: 'AI',
-                            color: Colors.cyan.shade400,
-                          ),
-                      ],
-                    ),
-
-
-                  ],
-                ),
-              ),
-
-              // Action Buttons
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(28),
-                    bottomRight: Radius.circular(28),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    // Play Again Button
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          resetGame();
-                        },
-                        icon: const Icon(Icons.refresh_rounded, size: 20),
-                        label: const Text('Play Again'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+              ),
+
+              // Pulsing crown animation
+              Positioned(
+                top: -30,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: TweenAnimationBuilder(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 1500),
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: 1.0 + (value * 0.1),
+                        child: Opacity(
+                          opacity: 0.7 - (value * 0.7),
+                          child: Icon(
+                            Icons.coronavirus_rounded,
+                            size: 100,
+                            color: Colors.amber.withOpacity(0.5),
                           ),
-                          elevation: 4,
                         ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header Section with improved animation
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.amber.shade600,
+                          Colors.orange.shade600,
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(28),
+                        topRight: Radius.circular(28),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    // Analysis Button
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => GameAnalysisScreen(
-                                moveHistory: moveHistory,
-                                isWhiteWinner: winner == 'White',
-                                isStalemate: false,
+                    child: Column(
+                      children: [
+                        // Animated Trophy Icon
+                        TweenAnimationBuilder(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: const Duration(milliseconds: 1000),
+                          curve: Curves.elasticOut,
+                          builder: (context, value, child) {
+                            return Transform.scale(
+                              scale: value,
+                              child: Transform.rotate(
+                                angle: (1 - value) * 0.5,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.amber.withOpacity(0.5),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.emoji_events_rounded,
+                              size: 60,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Title with fade-in animation
+                        TweenAnimationBuilder(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: const Duration(milliseconds: 800),
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'CHECKMATE!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 8,
+                                  color: Colors.black.withOpacity(0.3),
+                                  offset: const Offset(2, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Winner Announcement with slide animation
+                        FutureBuilder(
+                          future: Future.delayed(const Duration(milliseconds: 200)),
+                          builder: (context, snapshot) {
+                            return TweenAnimationBuilder(
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              duration: const Duration(milliseconds: 800),
+                              builder: (context, value, child) {
+                                return Opacity(
+                                  opacity: value,
+                                  child: Transform.translate(
+                                    offset: Offset(0, 15 * (1 - value)),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                '$winner Wins the Game!',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Stats Section
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      children: [
+                        // Stats Title
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.analytics_rounded,
+                              color: Colors.amber.shade400,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'GAME SUMMARY',
+                              style: TextStyle(
+                                color: Colors.grey[300],
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
                               ),
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.analytics_rounded, size: 20),
-                        label: const Text('Analysis'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
+                          ],
                         ),
+                        const SizedBox(height: 20),
+                        // Stats Grid with staggered animation
+                        GridView.count(
+                          shrinkWrap: true,
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 2.0,
+                          children: [
+                            _buildAnimatedStatCard(
+                              index: 0,
+                              icon: Icons.loop,
+                              label: 'Moves',
+                              value: '$moveCount',
+                              color: Colors.blue.shade400,
+                            ),
+                            _buildAnimatedStatCard(
+                              index: 1,
+                              icon: Icons.timer,
+                              label: 'Time',
+                              value: _formatDuration(
+                                  DateTime.now().difference(gameStartTime!)),
+                              color: Colors.green.shade400,
+                            ),
+                            _buildAnimatedStatCard(
+                              index: 2,
+                              icon: Icons.remove_circle_outline,
+                              label: 'White Taken',
+                              value: '${whitePiecesTaken.length}',
+                              color: Colors.red.shade400,
+                            ),
+                            _buildAnimatedStatCard(
+                              index: 3,
+                              icon: Icons.remove_circle_outline,
+                              label: 'Black Taken',
+                              value: '${blackPiecesTaken.length}',
+                              color: Colors.purple.shade400,
+                            ),
+                            if (isPlayingAgainstAI)
+                              _buildAnimatedStatCard(
+                                index: 4,
+                                icon: Icons.smart_toy,
+                                label: 'Mode',
+                                value: 'AI',
+                                color: Colors.cyan.shade400,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Action Buttons
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.2),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(28),
+                        bottomRight: Radius.circular(28),
                       ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        // Play Again Button
+                        Expanded(
+                          child: FutureBuilder(
+                            future: Future.delayed(const Duration(milliseconds: 400)),
+                            builder: (context, snapshot) {
+                              return TweenAnimationBuilder(
+                                tween: Tween(begin: 0.0, end: 1.0),
+                                duration: const Duration(milliseconds: 800),
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value,
+                                    child: Transform.scale(
+                                      scale: 0.9 + (0.1 * value),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    resetGame();
+                                  },
+                                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                                  label: const Text('Play Again'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green.shade600,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 4,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Analysis Button
+                        Expanded(
+                          child: FutureBuilder(
+                            future: Future.delayed(const Duration(milliseconds: 600)),
+                            builder: (context, snapshot) {
+                              return TweenAnimationBuilder(
+                                tween: Tween(begin: 0.0, end: 1.0),
+                                duration: const Duration(milliseconds: 800),
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value,
+                                    child: Transform.scale(
+                                      scale: 0.9 + (0.1 * value),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => GameAnalysisScreen(
+                                          moveHistory: moveHistory,
+                                          isWhiteWinner: winner == 'White',
+                                          isStalemate: false,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.analytics_rounded, size: 20),
+                                  label: const Text('Analysis'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue.shade600,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 4,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1382,6 +1523,48 @@ class _GameBoardState extends State<GameBoard> {
       ),
     );
   }
+
+// Add this helper method after _showWinDialog method:
+  Widget _buildAnimatedStatCard({
+    required int index,
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return FutureBuilder(
+      future: Future.delayed(Duration(milliseconds: index * 150)),
+      builder: (context, snapshot) {
+        return TweenAnimationBuilder(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 20 * (1 - value)),
+                child: child,
+              ),
+            );
+          },
+          child: _buildStatCard(
+            icon: icon,
+            label: label,
+            value: value,
+            color: color,
+          ),
+        );
+      },
+    );
+  }
+
+
+
+
+
+
+
 // Helper method for building stat cards
   Widget _buildStatCard({
     required IconData icon,
@@ -3159,29 +3342,60 @@ class _GameBoardState extends State<GameBoard> {
           Column(
             children: [
               // Checkmate/Check status
-              if (checkStatus || isGameOver)
+// Checkmate/Check status
+              if (isGameOver && winner != null)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isGameOver ? Colors.red[700] : Colors.orange[700],
-                    boxShadow: const [
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.red.shade700,
+                        Colors.red.shade900,
+                      ],
+                    ),
+                    boxShadow: [
                       BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      isGameOver ? 'CHECKMATE!' : 'CHECK!',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.emoji_events_rounded,
+                        color: Colors.amber[300],
+                        size: 28,
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'CHECKMATE - ${winner!.toUpperCase()} WINS!',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 4,
+                              color: Colors.black.withOpacity(0.5),
+                              offset: const Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Icon(
+                        Icons.emoji_events_rounded,
+                        color: Colors.amber[300],
+                        size: 28,
+                      ),
+                    ],
                   ),
                 ),
 

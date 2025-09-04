@@ -14,6 +14,9 @@ class DeadPiece extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       imagePath,
+      width: 24,
+      height: 24,
+      fit: BoxFit.contain,
       color: isWhite ? Colors.grey[400] : Colors.grey[800],
     );
   }

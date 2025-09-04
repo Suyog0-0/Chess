@@ -521,14 +521,8 @@ class _GameBoardState extends State<GameBoard> {
 
       case ChessPieceType.king:
         var directions = [
-          [-1, 0],
-          [1, 0],
-          [0, -1],
-          [0, 1],
-          [-1, -1],
-          [-1, 1],
-          [1, -1],
-          [1, 1]
+          [-1, 0], [1, 0], [0, -1], [0, 1],
+          [-1, -1], [-1, 1], [1, -1], [1, 1]
         ];
         for (var dir in directions) {
           int newRow = row + dir[0];
@@ -541,6 +535,43 @@ class _GameBoardState extends State<GameBoard> {
             continue;
           }
           candidateMoves.add([newRow, newCol]);
+        }
+
+        // Add castling moves
+        if (!piece.isWhite) {
+          // Black king
+          if (!blackKingMoved && !checkStatus) {
+            // Kingside castling
+            if (!blackRightRookMoved &&
+                board[0][5] == null &&
+                board[0][6] == null) {
+              candidateMoves.add([0, 6]);
+            }
+            // Queenside castling
+            if (!blackLeftRookMoved &&
+                board[0][1] == null &&
+                board[0][2] == null &&
+                board[0][3] == null) {
+              candidateMoves.add([0, 2]);
+            }
+          }
+        } else {
+          // White king
+          if (!whiteKingMoved && !checkStatus) {
+            // Kingside castling
+            if (!whiteRightRookMoved &&
+                board[7][5] == null &&
+                board[7][6] == null) {
+              candidateMoves.add([7, 6]);
+            }
+            // Queenside castling
+            if (!whiteLeftRookMoved &&
+                board[7][1] == null &&
+                board[7][2] == null &&
+                board[7][3] == null) {
+              candidateMoves.add([7, 2]);
+            }
+          }
         }
         break;
     }
@@ -651,12 +682,44 @@ class _GameBoardState extends State<GameBoard> {
       _playSound('move.mp3');
     }
 
-    // Update king positions
+
+
+// Update king positions and handle castling
     if (selectedPiece!.type == ChessPieceType.king) {
       if (selectedPiece!.isWhite) {
+        // Check for castling
+        if (selectedRow == 7 && selectedCol == 4) {
+          // Kingside castling
+          if (newCol == 6) {
+            board[7][5] = board[7][7]; // Move rook
+            board[7][7] = null;
+            whiteRightRookMoved = true;
+          }
+          // Queenside castling
+          else if (newCol == 2) {
+            board[7][3] = board[7][0]; // Move rook
+            board[7][0] = null;
+            whiteLeftRookMoved = true;
+          }
+        }
         whiteKingPosition = [newRow, newCol];
         whiteKingMoved = true;
       } else {
+        // Check for castling
+        if (selectedRow == 0 && selectedCol == 4) {
+          // Kingside castling
+          if (newCol == 6) {
+            board[0][5] = board[0][7]; // Move rook
+            board[0][7] = null;
+            blackRightRookMoved = true;
+          }
+          // Queenside castling
+          else if (newCol == 2) {
+            board[0][3] = board[0][0]; // Move rook
+            board[0][0] = null;
+            blackLeftRookMoved = true;
+          }
+        }
         blackKingPosition = [newRow, newCol];
         blackKingMoved = true;
       }

@@ -9,6 +9,7 @@ class StalemateScreen extends StatefulWidget {
   final int blackPiecesCaptured;
   final bool wasPlayingAgainstAI;
   final VoidCallback onPlayAgain;
+  final VoidCallback onViewAnalysis; // Add this
   final VoidCallback onBackToMenu;
 
   const StalemateScreen({
@@ -19,6 +20,7 @@ class StalemateScreen extends StatefulWidget {
     required this.blackPiecesCaptured,
     required this.wasPlayingAgainstAI,
     required this.onPlayAgain,
+    required this.onViewAnalysis, // Add this
     required this.onBackToMenu,
   });
 
@@ -273,87 +275,42 @@ class _StalemateScreenState extends State<StalemateScreen>
 
                     const SizedBox(height: 40),
 
+
+
+
                     // Animated game stats
                     SlideTransition(
                       position: _slideAnimation,
-                      child: Container(
-                        padding: const EdgeInsets.all(25),
-                        margin: const EdgeInsets.symmetric(horizontal: 30),
-                        decoration: BoxDecoration(
-                          color: const Color(0x6D000000),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: const Color(0x4DFFFFFF),
-                            width: 1,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildActionButton(
+                            onPressed: widget.onPlayAgain,
+                            icon: Icons.refresh,
+                            label: 'Play Again',
+                            color: Colors.green,
+                            isPrimary: true,
                           ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black54,
-                              blurRadius: 15,
-                              offset: Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.analytics,
-                                    color: Colors.blue[300], size: 24),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Game Statistics',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[200],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 25),
-                            _buildStatRow(
-                              'Total Moves',
-                              '${widget.moveCount}',
-                              Icons.swap_horiz,
-                              Colors.blue[300]!,
-                            ),
-                            _buildStatRow(
-                              'Game Duration',
-                              _formatDuration(widget.gameDuration),
-                              Icons.timer,
-                              Colors.green[300]!,
-                            ),
-                            _buildStatRow(
-                              'White Pieces Lost',
-                              '${widget.whitePiecesCaptured}',
-                              Icons.close,
-                              Colors.red[300]!,
-                            ),
-                            _buildStatRow(
-                              'Black Pieces Lost',
-                              '${widget.blackPiecesCaptured}',
-                              Icons.close,
-                              Colors.red[300]!,
-                            ),
-                            if (widget.wasPlayingAgainstAI)
-                              _buildStatRow(
-                                'Opponent',
-                                'AI Bot',
-                                Icons.smart_toy,
-                                Colors.purple[300]!,
-                              ),
-                            _buildStatRow(
-                              'Result',
-                              'Draw by Stalemate',
-                              Icons.handshake,
-                              Colors.blueGrey[300]!,
-                            ),
-                          ],
-                        ),
+                          _buildActionButton(
+                            onPressed: widget.onViewAnalysis, // Add this button
+                            icon: Icons.analytics,
+                            label: 'Analysis',
+                            color: Colors.blue,
+                            isPrimary: false,
+                          ),
+                          _buildActionButton(
+                            onPressed: widget.onBackToMenu,
+                            icon: Icons.home,
+                            label: 'Main Menu',
+                            color: Colors.grey[700]!,
+                            isPrimary: false,
+                          ),
+                        ],
                       ),
                     ),
+
+
+
 
                     const SizedBox(height: 40),
 

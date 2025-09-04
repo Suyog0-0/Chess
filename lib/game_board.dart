@@ -11,6 +11,8 @@ import 'login_screen.dart';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'stalemate_screen.dart';
+import 'game_analysis_screen.dart';
+
 
 class GameBoard extends StatefulWidget {
   const GameBoard({super.key});
@@ -1128,6 +1130,10 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
+
+
+
+
   void _showWinDialog() {
     _confettiController.play();
     _playSound('victory.mp3');
@@ -1210,6 +1216,22 @@ class _GameBoardState extends State<GameBoard> {
           ),
           TextButton(
             onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GameAnalysisScreen(
+                    moveHistory: moveHistory,
+                    isWhiteWinner: winner == 'White',
+                    isStalemate: false,
+                  ),
+                ),
+              );
+            },
+            child:
+            const Text('View Analysis', style: TextStyle(color: Colors.blue)),
+          ),
+          TextButton(
+            onPressed: () {
               Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
@@ -1224,6 +1246,9 @@ class _GameBoardState extends State<GameBoard> {
       ),
     );
   }
+
+
+
 
   Widget _buildStatRow(String label, String value) {
     return Padding(
@@ -3426,6 +3451,7 @@ class _GameBoardState extends State<GameBoard> {
     super.dispose();
   }
 
+// Replace the _showStalemateDialog method
   void _showStalemateDialog() {
     _confettiController.play();
     _playSound('stalemate.mp3');
@@ -3443,6 +3469,18 @@ class _GameBoardState extends State<GameBoard> {
           Navigator.pop(context);
           resetGame();
         },
+        onViewAnalysis: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GameAnalysisScreen(
+                moveHistory: moveHistory,
+                isWhiteWinner: false,
+                isStalemate: true,
+              ),
+            ),
+          );
+        },
         onBackToMenu: () {
           Navigator.pop(context);
           Navigator.pushAndRemoveUntil(
@@ -3453,8 +3491,7 @@ class _GameBoardState extends State<GameBoard> {
         },
       ),
     );
-  }
-}
+  }}
 
 
 

@@ -10,6 +10,7 @@ import 'settings_screen.dart';
 import 'login_screen.dart';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'stalemate_screen.dart';
 
 class GameBoard extends StatefulWidget {
   const GameBoard({super.key});
@@ -92,6 +93,9 @@ class _GameBoardState extends State<GameBoard> {
   bool whiteRightRookMoved = false;
   bool blackLeftRookMoved = false;
   bool blackRightRookMoved = false;
+
+
+
 
   // Game state
   bool isGameOver = false;
@@ -682,7 +686,60 @@ class _GameBoardState extends State<GameBoard> {
       _playSound('move.mp3');
     }
 
+    void _showStalemateDialog() {
+      _confettiController.play();
+      _playSound('stalemate.mp3');
 
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => StalemateScreen(
+          moveCount: moveCount,
+          gameDuration: DateTime.now().difference(gameStartTime!),
+          whitePiecesCaptured: whitePiecesTaken.length,
+          blackPiecesCaptured: blackPiecesTaken.length,
+          wasPlayingAgainstAI: isPlayingAgainstAI,
+          onPlayAgain: () {
+            Navigator.pop(context);
+            resetGame();
+          },
+          onBackToMenu: () {
+            Navigator.pop(context);
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+            );
+          },
+        ),
+      );
+    }
+
+
+
+
+
+
+
+
+
+
+    bool _isStalemate(bool isWhite) {
+      // Check if the king is NOT in check
+      if (isKingInCheck(isWhite)) return false;
+
+      // Check if any move can be made
+      for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+          final piece = board[row][col];
+          if (piece != null && piece.isWhite == isWhite) {
+            final moves = calculateValidMoves(row, col, piece);
+            if (moves.isNotEmpty) return false;
+          }
+        }
+      }
+      return true;
+    }
 
 // Update king positions and handle castling
     if (selectedPiece!.type == ChessPieceType.king) {
@@ -724,7 +781,6 @@ class _GameBoardState extends State<GameBoard> {
         blackKingMoved = true;
       }
     }
-
     // Update rook positions for castling
     if (selectedPiece!.type == ChessPieceType.rook) {
       if (selectedRow == 7 && selectedCol == 0) whiteLeftRookMoved = true;
@@ -744,6 +800,7 @@ class _GameBoardState extends State<GameBoard> {
       _playSound('check.mp3');
     }
 
+
     // Check for checkmate
     bool checkmate = _isCheckmate(!isWhiteTurn);
     if (checkmate) {
@@ -754,6 +811,18 @@ class _GameBoardState extends State<GameBoard> {
       _showWinDialog();
       return;
     }
+
+// Check for stalemate
+    bool stalemate = _isStalemate(!isWhiteTurn);
+    if (stalemate) {
+      setState(() {
+        isGameOver = true;
+        winner = null; // No winner in stalemate
+      });
+      _showStalemateDialog();
+      return;
+    }
+
 
     // Switch turns
     isWhiteTurn = !isWhiteTurn;

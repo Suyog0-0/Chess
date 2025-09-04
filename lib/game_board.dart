@@ -12,6 +12,8 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'stalemate_screen.dart';
 import 'game_analysis_screen.dart';
+import 'dart:math';
+
 
 
 class GameBoard extends StatefulWidget {
@@ -77,16 +79,20 @@ class _GameBoardState extends State<GameBoard> {
     [const Color(0xFFFFF3E0), const Color(0xFFFF9800)], // Orange
   ];
 
+
   final List<Color> backgroundThemes = [
-    Colors.grey[900]!, // Default dark
-    const Color(0xFF2C1810), // Dark wood
-    const Color(0xFF1A237E), // Deep blue
-    const Color(0xFF4A148C), // Deep purple
-    const Color(0xFF1B5E20), // Deep green
-    const Color(0xFFBF360C), // Deep orange
-    Colors.teal[800]!, // Teal (matching settings)
-    Colors.brown[800]!, // Brown (matching settings)
+    Colors.grey[900]!, // Default dark (index 0)
+    const Color(0xFF2C1810), // Dark wood (index 1)
+    const Color(0xFF1A237E), // Deep blue (index 2)
+    const Color(0xFF4A148C), // Deep purple (index 3)
+    const Color(0xFF1B5E20), // Deep green (index 4)
+    const Color(0xFFBF360C), // Deep orange (index 5)
+    Colors.teal[800]!, // Teal (index 6)
+    Colors.brown[800]!, // Brown (index 7)
   ];
+
+
+
 
   // Castling tracking
   bool whiteKingMoved = false;
@@ -1141,112 +1147,301 @@ class _GameBoardState extends State<GameBoard> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: backgroundThemes[selectedBackgroundTheme],
-        title: Column(
-          children: [
-            const Icon(
-              Icons.emoji_events,
-              size: 60,
-              color: Colors.amber,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'CHECKMATE!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            color: backgroundThemes[selectedBackgroundTheme],
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.6),
+                blurRadius: 30,
+                spreadRadius: 10,
+                offset: const Offset(0, 8),
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$winner Wins!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.black26,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Game Summary',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatRow('Total Moves:', '$moveCount'),
-                  _buildStatRow(
-                      'Game Duration:',
-                      _formatDuration(
-                          DateTime.now().difference(gameStartTime!))),
-                  _buildStatRow(
-                      'White Pieces Captured:', '${whitePiecesTaken.length}'),
-                  _buildStatRow(
-                      'Black Pieces Captured:', '${blackPiecesTaken.length}'),
-                  if (isPlayingAgainstAI) _buildStatRow('Opponent:', 'AI Bot'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              resetGame();
-            },
-            child:
-            const Text('Play Again', style: TextStyle(color: Colors.green)),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GameAnalysisScreen(
-                    moveHistory: moveHistory,
-                    isWhiteWinner: winner == 'White',
-                    isStalemate: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Section
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.amber.shade600,
+                      Colors.orange.shade600,
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    topRight: Radius.circular(28),
                   ),
                 ),
-              );
-            },
-            child:
-            const Text('View Analysis', style: TextStyle(color: Colors.blue)),
+                child: Column(
+                  children: [
+                    // Trophy Icon
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 3,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.emoji_events_rounded,
+                        size: 60,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Title
+                    Text(
+                      'CHECKMATE!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 8,
+                            color: Colors.black.withOpacity(0.3),
+                            offset: const Offset(2, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Winner Announcement
+                    Text(
+                      '$winner Wins the Game!',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Stats Section
+              Container(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  children: [
+                    // Stats Title
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.analytics_rounded,
+                          color: Colors.amber.shade400,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'GAME SUMMARY',
+                          style: TextStyle(
+                            color: Colors.grey[300],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // Stats Grid
+// Stats Grid
+                    GridView.count(
+                      shrinkWrap: true,
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,  // Reduced from 16
+                      mainAxisSpacing: 10,   // Reduced from 16
+                      childAspectRatio: 2.0, // Reduced from 3.5
+                      children: [
+                        _buildStatCard(
+                          icon: Icons.loop,
+                          label: 'Moves',
+                          value: '$moveCount',      // Shorter label
+                          color: Colors.blue.shade400,
+                        ),
+                        _buildStatCard(
+                          icon: Icons.timer,
+                          label: 'Time',
+                          value: _formatDuration(    // Shorter label
+                              DateTime.now().difference(gameStartTime!)),
+                          color: Colors.green.shade400,
+                        ),
+                        _buildStatCard(
+                          icon: Icons.remove_circle_outline,
+                          label: 'White Taken',      // Shorter label
+                          value: '${whitePiecesTaken.length}',
+                          color: Colors.red.shade400,
+                        ),
+                        _buildStatCard(
+                          icon: Icons.remove_circle_outline,
+                          label: 'Black Taken',      // Shorter label
+                          value: '${blackPiecesTaken.length}',
+                          color: Colors.purple.shade400,
+                        ),
+                        if (isPlayingAgainstAI)
+                          _buildStatCard(
+                            icon: Icons.smart_toy,
+                            label: 'Mode',           // Shorter label
+                            value: 'AI',
+                            color: Colors.cyan.shade400,
+                          ),
+                      ],
+                    ),
+
+
+                  ],
+                ),
+              ),
+
+              // Action Buttons
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(28),
+                    bottomRight: Radius.circular(28),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Play Again Button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          resetGame();
+                        },
+                        icon: const Icon(Icons.refresh_rounded, size: 20),
+                        label: const Text('Play Again'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Analysis Button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GameAnalysisScreen(
+                                moveHistory: moveHistory,
+                                isWhiteWinner: winner == 'White',
+                                isStalemate: false,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.analytics_rounded, size: 20),
+                        label: const Text('Analysis'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
-              );
-            },
-            child:
-            const Text('Main Menu', style: TextStyle(color: Colors.white)),
+        ),
+      ),
+    );
+  }
+// Helper method for building stat cards
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
 
 
 
@@ -2193,7 +2388,7 @@ class _GameBoardState extends State<GameBoard> {
                                         crossAxisSpacing: 12,
                                         mainAxisSpacing: 12,
                                       ),
-                                      itemCount: backgroundThemes.length,
+                                      itemCount: min(backgroundThemes.length, 8), // Ensure we don't exceed available themes
                                       itemBuilder: (context, index) {
                                         final isSelected =
                                             tempBackgroundTheme == index;

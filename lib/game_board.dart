@@ -37,6 +37,15 @@ class _GameBoardState extends State<GameBoard> {
   List<int> blackKingPosition = [0, 4];
   bool checkStatus = false;
 
+  // NEW PRE-MOVE VARIABLES (ADD THESE)
+  ChessPiece? preMoveFromPiece;
+  int preMoveFromRow = -1;
+  int preMoveFromCol = -1;
+  int preMoveToRow = -1;
+  int preMoveToCol = -1;
+  bool hasPreMove = false;
+
+
   // Enhanced variables
   bool isDarkMode = true;
   bool soundEnabled = true;
@@ -343,13 +352,45 @@ class _GameBoardState extends State<GameBoard> {
     return true;
   }
 
-  void pieceSelected(int row, int col) {
-    if (isGameOver || (isPlayingAgainstAI && !isWhiteTurn) || isPromoting)
-      return;
+
+
+
+
+
+
+
+
+  void pieceSelected(int row, int col, {bool isRightClick = false}) {
+    if (isGameOver || isPromoting) return;
+
+// Handle right-click for pre-moves - ONLY allow during appropriate times
+    if (isRightClick) {
+      // Only allow pre-moves when it's not our turn (in AI mode) or always in friend mode
+      if (isPlayingAgainstAI && isWhiteTurn) {
+        // Playing against AI and it's white's turn - allow pre-move for white
+        _handlePreMove(row, col);
+        return;
+      } else if (!isPlayingAgainstAI) {
+        // Playing with friend - allow pre-moves anytime
+        _handlePreMove(row, col);
+        return;
+      } else {
+        // AI mode and it's AI's turn - no pre-moves allowed
+        return;
+      }
+    }
+
+// Handle left-click for normal moves
+    if (isPlayingAgainstAI && !isWhiteTurn) return;
 
     setState(() {
       // Clear any hint when selecting a piece
       hintMove = null;
+
+      // Clear any existing pre-moves when making a normal move
+      if (hasPreMove) {
+        _clearPreMove();
+      }
 
       // If no piece is selected yet
       if (selectedPiece == null) {
@@ -388,6 +429,13 @@ class _GameBoardState extends State<GameBoard> {
       }
     });
   }
+
+
+
+
+
+
+
 
   List<List<int>> calculateValidMoves(int row, int col, ChessPiece piece) {
     List<List<int>> candidateMoves = calculateRawMoves(row, col, piece);
@@ -648,6 +696,10 @@ class _GameBoardState extends State<GameBoard> {
     return false;
   }
 
+
+
+
+
   void movePiece(int newRow, int newCol) {
     // Clear any hint when making a move
     if (_isUndoInProgress) return;
@@ -693,17 +745,6 @@ class _GameBoardState extends State<GameBoard> {
     } else {
       _playSound('move.mp3');
     }
-
-
-
-
-
-
-
-
-
-
-
     bool _isStalemate(bool isWhite) {
       // Check if the king is NOT in check
       if (isKingInCheck(isWhite)) return false;
@@ -804,6 +845,8 @@ class _GameBoardState extends State<GameBoard> {
     }
 
 
+    // Make AI move if it's AI's turn
+
     // Switch turns
     isWhiteTurn = !isWhiteTurn;
 
@@ -815,13 +858,224 @@ class _GameBoardState extends State<GameBoard> {
       moveCount++;
     });
 
-    // Make AI move if it's AI's turn
+    // Execute pre-move if it exists for the new current player
+// Execute pre-move if it exists and is for the new current player
+// But wait a moment for the board state to settle
+    if (hasPreMove && preMoveFromPiece != null &&
+        preMoveFromPiece!.isWhite == isWhiteTurn) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _executePreMove();
+        }
+      });
+    }
+
+// Make AI move if it's AI's turn
     if (isPlayingAgainstAI && !isWhiteTurn && !isGameOver) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _makeAIMove();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _makeAIMove();
+        }
       });
     }
   }
+
+
+
+
+
+
+
+
+  void _handlePreMove(int row, int col) {
+    if (isGameOver || isPromoting) return;
+
+    setState(() {
+      // If no pre-move piece is selected yet
+      if (preMoveFromPiece == null) {
+        // Only allow selecting pieces that will be able to move on the next turn
+        ChessPiece? piece = board[row][col];
+        if (piece != null) {
+          // In AI mode: allow pre-moves for human player (white)
+          // In friend mode: allow pre-moves for the player whose turn is coming next
+          bool canPreMove = false;
+
+          if (isPlayingAgainstAI) {
+            // In AI mode, only white (human) can pre-move, and only when it will be white's turn next
+            canPreMove = piece.isWhite && !isWhiteTurn;
+          } else {
+            // In friend mode, allow pre-moves for the next player's turn
+            canPreMove = piece.isWhite != isWhiteTurn;
+          }
+
+          if (canPreMove) {
+            preMoveFromPiece = piece;
+            preMoveFromRow = row;
+            preMoveFromCol = col;
+
+            // Show potential moves for this piece (for visual feedback)
+            // We calculate what moves would be valid if it were this piece's turn
+            validMoves = calculateRawMoves(row, col, piece);
+
+            _playSound('move.mp3'); // Use existing sound
+          }
+        }
+      }
+      // If we have a piece selected, now select the destination
+      else {
+        // Check if clicking on the same piece to deselect
+        if (row == preMoveFromRow && col == preMoveFromCol) {
+          _clearPreMove();
+          return;
+        }
+
+        // Calculate what moves would be valid for this piece
+        final tempValidMoves = calculateRawMoves(preMoveFromRow, preMoveFromCol, preMoveFromPiece!);
+
+        // Check if the target square is a potentially valid move
+        if (tempValidMoves.any((move) => move[0] == row && move[1] == col)) {
+          preMoveToRow = row;
+          preMoveToCol = col;
+          hasPreMove = true;
+
+          // Clear the visual selection
+          selectedPiece = null;
+          selectedRow = -1;
+          selectedCol = -1;
+          validMoves = [];
+
+          // Show visual feedback for pre-move
+          _showPreMoveSnackBar();
+          _playSound('move.mp3');
+        } else {
+          // Invalid destination, clear pre-move
+          _clearPreMove();
+        }
+      }
+    });
+  }
+
+  void _showInvalidPreMoveSnackBar() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.block, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text('Pre-move no longer valid and was cancelled'),
+            ],
+          ),
+          backgroundColor: Colors.red[700],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _clearPreMove() {
+    setState(() {
+      preMoveFromPiece = null;
+      preMoveFromRow = -1;
+      preMoveFromCol = -1;
+      preMoveToRow = -1;
+      preMoveToCol = -1;
+      hasPreMove = false;
+
+      // Clear visual indicators if they were showing pre-move info
+      if (selectedPiece == null) {
+        validMoves = [];
+      }
+    });
+  }
+
+  void _showPreMoveSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.schedule, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text('Pre-move set: ${_getPieceNotation(preMoveFromPiece!)} to ${_getSquareNotation(preMoveToRow, preMoveToCol)}'),
+          ],
+        ),
+        backgroundColor: Colors.blue[700],
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'Cancel',
+          textColor: Colors.white,
+          onPressed: () {
+            setState(() {
+              _clearPreMove();
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  String _getPieceNotation(ChessPiece piece) {
+    switch (piece.type) {
+      case ChessPieceType.king:
+        return 'K';
+      case ChessPieceType.queen:
+        return 'Q';
+      case ChessPieceType.rook:
+        return 'R';
+      case ChessPieceType.bishop:
+        return 'B';
+      case ChessPieceType.knight:
+        return 'N';
+      case ChessPieceType.pawn:
+        return '';
+    }
+  }
+
+  String _getSquareNotation(int row, int col) {
+    return '${String.fromCharCode('a'.codeUnitAt(0) + col)}${8 - row}';
+  }
+
+
+
+
+  void _executePreMove() {
+    if (!hasPreMove || preMoveFromPiece == null) return;
+
+    // Double-check that the piece is still there and it's the right turn
+    if (board[preMoveFromRow][preMoveFromCol] == preMoveFromPiece &&
+        preMoveFromPiece!.isWhite == isWhiteTurn) {
+
+      // Recalculate valid moves with current board state
+      final currentValidMoves = calculateValidMoves(preMoveFromRow, preMoveFromCol, preMoveFromPiece!);
+
+      // Check if the pre-move destination is still valid
+      if (currentValidMoves.any((move) => move[0] == preMoveToRow && move[1] == preMoveToCol)) {
+        // Set up the move state as if user clicked normally
+        setState(() {
+          selectedPiece = preMoveFromPiece;
+          selectedRow = preMoveFromRow;
+          selectedCol = preMoveFromCol;
+          validMoves = currentValidMoves;
+        });
+
+        // Small delay to show the selection, then execute
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            movePiece(preMoveToRow, preMoveToCol);
+          }
+        });
+      } else {
+        // Pre-move is no longer valid, show message
+        _showInvalidPreMoveSnackBar();
+      }
+    }
+
+    // Always clear pre-move after attempting execution
+    _clearPreMove();
+  }
+
+
+
 
   void _undoMove() {
     if (moveHistory.isEmpty || isAIThinking || isPromoting) return;
@@ -3456,10 +3710,12 @@ class _GameBoardState extends State<GameBoard> {
                                       isCapturable: isCapturable,
                                       isKingInCheck: isKingInCheck,
                                       onTap: () => pieceSelected(row, col),
+                                      onSecondaryTap: () => pieceSelected(row, col, isRightClick: true), // ADD THIS LINE
                                       isDarkMode: isDarkMode,
-                                      boardColors:
-                                      boardThemes[selectedBoardTheme],
+                                      boardColors: boardThemes[selectedBoardTheme],
                                       isHint: isHintSquare,
+                                      isPreMove: hasPreMove && ((row == preMoveFromRow && col == preMoveFromCol) ||
+                                          (row == preMoveToRow && col == preMoveToCol)), // ADD THIS LINE
                                     );
                                   },
                                 ),

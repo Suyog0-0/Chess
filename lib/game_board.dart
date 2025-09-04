@@ -913,6 +913,59 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
+  Widget _buildEnhancedActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback? onPressed,
+    required bool isDisabled,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: isDisabled
+                ? Colors.grey[700]
+                : color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDisabled
+                  ? Colors.grey[600]!
+                  : color.withOpacity(0.5),
+              width: 1.5,
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(
+              icon,
+              size: 22,
+              color: isDisabled
+                  ? Colors.grey[500]
+                  : color,
+            ),
+            onPressed: onPressed,
+            tooltip: label,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDisabled
+                ? Colors.grey[500]
+                : Colors.grey[300],
+          ),
+        ),
+      ],
+    );
+  }
+
+
   Widget _buildPromotionOption(ChessPieceType type, String label) {
     return Column(
       children: [
@@ -2478,51 +2531,170 @@ class _GameBoardState extends State<GameBoard> {
                   ),
                 ),
 
+
+
               // Game status and info
               Container(
-                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // Turn indicator with animated chess piece
+                    Row(
                       children: [
-                        Text(
-                          '${isWhiteTurn ? "White" : "Black"} to move',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (isPlayingAgainstAI && isAIThinking)
-                          Text(
-                            'AI is thinking...',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.yellow,
-                              fontStyle: FontStyle.italic,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isWhiteTurn ? Colors.white : Colors.grey[800],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isWhiteTurn ? Colors.amber : Colors.grey[600]!,
+                              width: 2,
                             ),
                           ),
+                          child: Image.asset(
+                            'lib/images/king.png',
+                            width: 24,
+                            height: 24,
+                            color: isWhiteTurn ? Colors.black : Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'TURN',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[400],
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            Text(
+                              isWhiteTurn ? 'WHITE' : 'BLACK',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isWhiteTurn ? Colors.white : Colors.grey[300],
+                                shadows: [
+                                  Shadow(
+                                    blurRadius: 4,
+                                    color: isWhiteTurn
+                                        ? Colors.white.withOpacity(0.6)
+                                        : Colors.black.withOpacity(0.6),
+                                    offset: const Offset(1, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isPlayingAgainstAI && isAIThinking)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.yellow[400]!,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'AI Thinking...',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.yellow[400],
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
+
+                    // Game info with icons
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          'Moves: $moveCount',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[300],
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.loop,
+                              size: 16,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Moves: $moveCount',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[300],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          isPlayingAgainstAI ? 'vs AI' : 'vs Friend',
-                          style: TextStyle(
-                            fontSize: 12,
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
                             color: isPlayingAgainstAI
-                                ? Colors.blue[300]
-                                : Colors.green[300],
+                                ? Colors.blue.withOpacity(0.2)
+                                : Colors.green.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isPlayingAgainstAI
+                                  ? Colors.blue[700]!
+                                  : Colors.green[700]!,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isPlayingAgainstAI ? Icons.smart_toy : Icons.people,
+                                size: 14,
+                                color: isPlayingAgainstAI
+                                    ? Colors.blue[300]
+                                    : Colors.green[300],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isPlayingAgainstAI ? 'VS AI' : 'VS FRIEND',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isPlayingAgainstAI
+                                      ? Colors.blue[300]
+                                      : Colors.green[300],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -2530,6 +2702,7 @@ class _GameBoardState extends State<GameBoard> {
                   ],
                 ),
               ),
+
 
               // White pieces taken
               SizedBox(
@@ -2721,72 +2894,87 @@ class _GameBoardState extends State<GameBoard> {
                 ),
               ),
 
-              // Bottom action bar
+
+
+// Bottom action bar
+// Enhanced Bottom action bar
               Container(
-                padding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                 decoration: BoxDecoration(
                   color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, -2),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    // New Game Button
+                    _buildEnhancedActionButton(
+                      icon: Icons.restart_alt,
+                      label: 'New Game',
+                      color: Colors.green[600]!,
+                      onPressed: _showNewGameDialog,
+                      isDisabled: false,
+                    ),
+
+                    // Themes Button
+                    _buildEnhancedActionButton(
+                      icon: Icons.palette,
+                      label: 'Themes',
+                      color: Colors.blue[600]!,
+                      onPressed: _showThemeDialog,
+                      isDisabled: false,
+                    ),
+
+                    // Hints Toggle Button
+                    _buildEnhancedActionButton(
+                      icon: showHints ? Icons.visibility : Icons.visibility_off,
+                      label: showHints ? 'Hints On' : 'Hints Off',
+                      color: Colors.purple[600]!,
+                      onPressed: _toggleHints,
+                      isDisabled: false,
+                    ),
+
+                    // Undo Button
+                    _buildEnhancedActionButton(
+                      icon: Icons.undo,
+                      label: 'Undo',
+                      color: moveHistory.isEmpty ? Colors.grey[600]! : Colors.orange[600]!,
+                      onPressed: moveHistory.isEmpty ? null : _undoMove,
+                      isDisabled: moveHistory.isEmpty,
+                    ),
+
+                    // Main Menu Button
+                    _buildEnhancedActionButton(
+                      icon: Icons.home,
+                      label: 'Main Menu',
+                      color: Colors.orange[600]!,
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              (route) => false,
+                        );
+                      },
+                      isDisabled: false,
                     ),
                   ],
                 ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      _buildActionButton(
-                        icon: Icons.refresh,
-                        label: 'New Game',
-                        color: Colors.green,
-                        onPressed: _showNewGameDialog,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildActionButton(
-                        icon: Icons.palette,
-                        label: 'Themes',
-                        color: Colors.blue,
-                        onPressed: _showThemeDialog,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildActionButton(
-                        icon: showHints ? Icons.visibility : Icons.visibility_off,
-                        label: showHints ? 'Hide Hints' : 'Show Hints',
-                        color: Colors.purple,
-                        onPressed: _toggleHints,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildActionButton(
-                        icon: Icons.undo,
-                        label: 'Undo',
-                        color: Colors.orange,
-                        onPressed: moveHistory.isEmpty
-                            ? () {}
-                            : _undoMove,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildActionButton(
-                        icon: Icons.home,
-                        label: 'Main Menu',
-                        color: Colors.orange,
-                        onPressed: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const LoginScreen()),
-                                (route) => false,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
               ),
+
+
+
+
 
 
 

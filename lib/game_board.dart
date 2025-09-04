@@ -19,7 +19,7 @@ class GameBoard extends StatefulWidget {
 }
 
 class _GameBoardState extends State<GameBoard> {
-  // Existing variables
+  // Board state
   late List<List<ChessPiece?>> board;
   ChessPiece? selectedPiece;
   int selectedRow = -1;
@@ -48,8 +48,16 @@ class _GameBoardState extends State<GameBoard> {
   int selectedBoardTheme = 0;
   int selectedBackgroundTheme = 0;
 
-  // Coordinates display
+  // UI settings
   bool showCoordinates = true;
+  bool showHints = true;
+
+  // Hint system
+  List<int>? hintMove; // [fromRow, fromCol, toRow, toCol]
+  bool isCalculatingHint = false;
+
+  List<MoveHistory> moveHistory = [];
+  bool _isUndoInProgress = false;
 
   // Pawn promotion
   bool isPromoting = false;
@@ -108,6 +116,7 @@ class _GameBoardState extends State<GameBoard> {
       selectedBackgroundTheme = prefs.getInt('background_theme') ?? 0;
       isPlayingAgainstAI = prefs.getBool('ai_mode') ?? false;
       showCoordinates = prefs.getBool('show_coordinates') ?? true;
+      showHints = prefs.getBool('show_hints') ?? true;
     });
   }
 
@@ -119,6 +128,7 @@ class _GameBoardState extends State<GameBoard> {
     await prefs.setInt('background_theme', selectedBackgroundTheme);
     await prefs.setBool('ai_mode', isPlayingAgainstAI);
     await prefs.setBool('show_coordinates', showCoordinates);
+    await prefs.setBool('show_hints', showHints);
   }
 
   Future<void> _playSound(String soundFile) async {
@@ -144,7 +154,7 @@ class _GameBoardState extends State<GameBoard> {
 
   void _initializeBoard() {
     List<List<ChessPiece?>> newBoard =
-        List.generate(8, (index) => List.generate(8, (index) => null));
+    List.generate(8, (index) => List.generate(8, (index) => null));
 
     // Placing pawns
     for (int i = 0; i < 8; i++) {
@@ -243,6 +253,7 @@ class _GameBoardState extends State<GameBoard> {
     blackRightRookMoved = false;
     isGameOver = false;
     winner = null;
+    hintMove = null;
   }
 
   // Simple AI implementation
@@ -280,7 +291,7 @@ class _GameBoardState extends State<GameBoard> {
     if (allPossibleMoves.isNotEmpty) {
       // Simple AI logic: prioritize captures, then random moves
       final captureMoves =
-          allPossibleMoves.where((move) => move['capturesOpponent']).toList();
+      allPossibleMoves.where((move) => move['capturesOpponent']).toList();
       final selectedMove = captureMoves.isNotEmpty
           ? captureMoves[Random().nextInt(captureMoves.length)]
           : allPossibleMoves[Random().nextInt(allPossibleMoves.length)];
@@ -325,6 +336,9 @@ class _GameBoardState extends State<GameBoard> {
       return;
 
     setState(() {
+      // Clear any hint when selecting a piece
+      hintMove = null;
+
       // If no piece is selected yet
       if (selectedPiece == null) {
         if (board[row][col] != null) {
@@ -380,7 +394,7 @@ class _GameBoardState extends State<GameBoard> {
 
     switch (piece.type) {
       case ChessPieceType.pawn:
-        // Forward move
+      // Forward move
         if (isInBoard(row + direction, col) &&
             board[row + direction][col] == null) {
           candidateMoves.add([row + direction, col]);
@@ -582,7 +596,7 @@ class _GameBoardState extends State<GameBoard> {
         if (piece != null && piece.isWhite != isWhite) {
           List<List<int>> moves = calculateRawMoves(row, col, piece);
           if (moves.any((move) =>
-              move[0] == kingPosition[0] && move[1] == kingPosition[1])) {
+          move[0] == kingPosition[0] && move[1] == kingPosition[1])) {
             return true;
           }
         }
@@ -592,6 +606,25 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void movePiece(int newRow, int newCol) {
+    // Clear any hint when making a move
+    if (_isUndoInProgress) return;
+    moveHistory.add(MoveHistory(
+      movedPiece: selectedPiece,
+      capturedPiece: board[newRow][newCol],
+      fromRow: selectedRow,
+      fromCol: selectedCol,
+      toRow: newRow,
+      toCol: newCol,
+      wasKingMove: selectedPiece!.type == ChessPieceType.king,
+      wasRookMove: selectedPiece!.type == ChessPieceType.rook,
+      wasCheck: checkStatus,
+      wasCheckmate: isGameOver,
+    ));
+
+    setState(() {
+      hintMove = null;
+    });
+
     // Check for pawn promotion
     if (selectedPiece!.type == ChessPieceType.pawn &&
         ((selectedPiece!.isWhite && newRow == 0) ||
@@ -678,6 +711,114 @@ class _GameBoardState extends State<GameBoard> {
     }
   }
 
+  void _undoMove() {
+    if (moveHistory.isEmpty || isAIThinking || isPromoting) return;
+
+    setState(() {
+      _isUndoInProgress = true;
+
+      // Get and remove the last move
+      if (moveHistory.isNotEmpty) {
+        MoveHistory lastMove = moveHistory.removeLast();
+
+        // Restore the board
+        board[lastMove.fromRow][lastMove.fromCol] = lastMove.movedPiece;
+        board[lastMove.toRow][lastMove.toCol] = lastMove.capturedPiece;
+
+        // Handle captured piece restoration
+        if (lastMove.capturedPiece != null) {
+          if (lastMove.capturedPiece!.isWhite) {
+            whitePiecesTaken.removeLast();
+          } else {
+            blackPiecesTaken.removeLast();
+          }
+        }
+
+        // Update king positions for king moves or castling
+        if (lastMove.wasKingMove) {
+          if (lastMove.movedPiece!.isWhite) {
+            whiteKingPosition = [lastMove.fromRow, lastMove.fromCol];
+            whiteKingMoved =
+            !whiteKingMoved; // Toggle to reflect pre-move state
+            // Handle castling (if implemented)
+            if (lastMove.wasCastling) {
+              // Add logic to move rook back (e.g., kingside or queenside)
+              if (lastMove.fromCol == 4 && lastMove.toCol == 6) {
+                board[7][5] = null;
+                board[7][7] = ChessPiece(
+                  type: ChessPieceType.rook,
+                  isWhite: true,
+                  imagePath: 'lib/images/rook.png',
+                );
+                whiteRightRookMoved = false;
+              } else if (lastMove.fromCol == 4 && lastMove.toCol == 2) {
+                board[7][3] = null;
+                board[7][0] = ChessPiece(
+                  type: ChessPieceType.rook,
+                  isWhite: true,
+                  imagePath: 'lib/images/rook.png',
+                );
+                whiteLeftRookMoved = false;
+              }
+            }
+          } else {
+            blackKingPosition = [lastMove.fromRow, lastMove.fromCol];
+            blackKingMoved = !blackKingMoved;
+            if (lastMove.wasCastling) {
+              if (lastMove.fromCol == 4 && lastMove.toCol == 6) {
+                board[0][5] = null;
+                board[0][7] = ChessPiece(
+                  type: ChessPieceType.rook,
+                  isWhite: false,
+                  imagePath: 'lib/images/rook.png',
+                );
+                blackRightRookMoved = false;
+              } else if (lastMove.fromCol == 4 && lastMove.toCol == 2) {
+                board[0][3] = null;
+                board[0][0] = ChessPiece(
+                  type: ChessPieceType.rook,
+                  isWhite: false,
+                  imagePath: 'lib/images/rook.png',
+                );
+                blackLeftRookMoved = false;
+              }
+            }
+          }
+        }
+
+        // Update rook moved status
+        if (lastMove.wasRookMove) {
+          if (lastMove.fromRow == 7 && lastMove.fromCol == 0)
+            whiteLeftRookMoved = !whiteLeftRookMoved;
+          if (lastMove.fromRow == 7 && lastMove.fromCol == 7)
+            whiteRightRookMoved = !whiteRightRookMoved;
+          if (lastMove.fromRow == 0 && lastMove.fromCol == 0)
+            blackLeftRookMoved = !blackLeftRookMoved;
+          if (lastMove.fromRow == 0 && lastMove.fromCol == 7)
+            blackRightRookMoved = !blackRightRookMoved;
+        }
+
+        // Restore game state
+        isWhiteTurn = !isWhiteTurn;
+        moveCount--;
+        checkStatus = isKingInCheck(!isWhiteTurn); // Recalculate check
+        isGameOver = _isCheckmate(!isWhiteTurn); // Recalculate checkmate
+        winner = isGameOver ? (isWhiteTurn ? 'Black' : 'White') : null;
+
+        // Clear selection
+        selectedPiece = null;
+        selectedRow = -1;
+        selectedCol = -1;
+        validMoves = [];
+        hintMove = null; // Clear hint after undo
+
+        _isUndoInProgress = false;
+      }
+    });
+
+    _playSound('move.mp3');
+  }
+
   void promotePawn(ChessPieceType newType) {
     board[promotionRow][promotionCol] = ChessPiece(
       type: newType,
@@ -685,7 +826,7 @@ class _GameBoardState extends State<GameBoard> {
       imagePath: 'lib/images/${newType.toString().split('.').last}.png',
     );
 
-    _playSound('move.mp3');
+    _playSound('promote.mp3');
 
     // Check for check after promotion
     checkStatus = isKingInCheck(!isWhiteTurn);
@@ -812,28 +953,6 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 20),
-      label: Text(label, style: const TextStyle(fontSize: 14)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-
-
-
-
   void _showWinDialog() {
     _confettiController.play();
     _playSound('victory.mp3');
@@ -912,7 +1031,7 @@ class _GameBoardState extends State<GameBoard> {
               resetGame();
             },
             child:
-                const Text('Play Again', style: TextStyle(color: Colors.green)),
+            const Text('Play Again', style: TextStyle(color: Colors.green)),
           ),
           TextButton(
             onPressed: () {
@@ -920,11 +1039,11 @@ class _GameBoardState extends State<GameBoard> {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
+                    (route) => false,
               );
             },
             child:
-                const Text('Main Menu', style: TextStyle(color: Colors.white)),
+            const Text('Main Menu', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -977,20 +1096,19 @@ class _GameBoardState extends State<GameBoard> {
       isGameOver = false;
       winner = null;
       isPromoting = false;
+      hintMove = null;
+      moveHistory.clear();
     });
   }
 
-
-
-
-  // NewGame Dialog
   void _showNewGameDialog() {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => Dialog(
           backgroundColor: backgroundThemes[selectedBackgroundTheme],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Container(
             width: MediaQuery.of(context).size.width * 0.85,
             padding: const EdgeInsets.all(28),
@@ -1125,7 +1243,8 @@ class _GameBoardState extends State<GameBoard> {
                           });
                         },
                         child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: !isPlayingAgainstAI
@@ -1197,7 +1316,8 @@ class _GameBoardState extends State<GameBoard> {
                           });
                         },
                         child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: isPlayingAgainstAI
@@ -1298,9 +1418,7 @@ class _GameBoardState extends State<GameBoard> {
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 16),
-
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
@@ -1348,9 +1466,6 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
-
-
-// Theme Dialog
   void _showThemeDialog() {
     int tempBoardTheme = selectedBoardTheme;
     int tempBackgroundTheme = selectedBackgroundTheme;
@@ -1491,8 +1606,10 @@ class _GameBoardState extends State<GameBoard> {
                                     const SizedBox(height: 16),
                                     GridView.builder(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      physics:
+                                      const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: 3,
                                         childAspectRatio: 0.85,
                                         crossAxisSpacing: 12,
@@ -1500,7 +1617,8 @@ class _GameBoardState extends State<GameBoard> {
                                       ),
                                       itemCount: boardThemes.length,
                                       itemBuilder: (context, index) {
-                                        final isSelected = tempBoardTheme == index;
+                                        final isSelected =
+                                            tempBoardTheme == index;
                                         return GestureDetector(
                                           onTap: () {
                                             setStateDialog(() {
@@ -1508,26 +1626,33 @@ class _GameBoardState extends State<GameBoard> {
                                             });
                                           },
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 200),
+                                            duration: const Duration(
+                                                milliseconds: 200),
                                             padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
                                               color: isSelected
-                                                  ? Colors.amber.withOpacity(0.2)
-                                                  : Colors.black.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(16),
+                                                  ? Colors.amber
+                                                  .withOpacity(0.2)
+                                                  : Colors.black
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                              BorderRadius.circular(16),
                                               border: Border.all(
                                                 color: isSelected
                                                     ? Colors.amber
                                                     : Colors.grey[600]!,
                                                 width: isSelected ? 3 : 1,
                                               ),
-                                              boxShadow: isSelected ? [
+                                              boxShadow: isSelected
+                                                  ? [
                                                 BoxShadow(
-                                                  color: Colors.amber.withOpacity(0.3),
+                                                  color: Colors.amber
+                                                      .withOpacity(0.3),
                                                   blurRadius: 8,
                                                   spreadRadius: 2,
                                                 ),
-                                              ] : null,
+                                              ]
+                                                  : null,
                                             ),
                                             child: Column(
                                               children: [
@@ -1535,28 +1660,42 @@ class _GameBoardState extends State<GameBoard> {
                                                 Expanded(
                                                   child: Container(
                                                     decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderRadius:
+                                                      BorderRadius.circular(
+                                                          8),
                                                       border: Border.all(
-                                                        color: Colors.grey[400]!,
+                                                        color:
+                                                        Colors.grey[400]!,
                                                         width: 1,
                                                       ),
                                                     ),
                                                     child: ClipRRect(
-                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderRadius:
+                                                      BorderRadius.circular(
+                                                          8),
                                                       child: GridView.builder(
-                                                        physics: const NeverScrollableScrollPhysics(),
-                                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                                        physics:
+                                                        const NeverScrollableScrollPhysics(),
+                                                        gridDelegate:
+                                                        const SliverGridDelegateWithFixedCrossAxisCount(
                                                           crossAxisCount: 4,
                                                         ),
                                                         itemCount: 16,
-                                                        itemBuilder: (context, squareIndex) {
-                                                          final row = squareIndex ~/ 4;
-                                                          final col = squareIndex % 4;
-                                                          final isWhiteSquare = (row + col) % 2 == 0;
+                                                        itemBuilder: (context,
+                                                            squareIndex) {
+                                                          final row =
+                                                              squareIndex ~/ 4;
+                                                          final col =
+                                                              squareIndex % 4;
+                                                          final isWhiteSquare =
+                                                              (row + col) % 2 ==
+                                                                  0;
                                                           return Container(
                                                             color: isWhiteSquare
-                                                                ? boardThemes[index][0]
-                                                                : boardThemes[index][1],
+                                                                ? boardThemes[
+                                                            index][0]
+                                                                : boardThemes[
+                                                            index][1],
                                                           );
                                                         },
                                                       ),
@@ -1577,21 +1716,27 @@ class _GameBoardState extends State<GameBoard> {
                                                 ),
                                                 if (isSelected)
                                                   Container(
-                                                    margin: const EdgeInsets.only(top: 4),
-                                                    padding: const EdgeInsets.symmetric(
+                                                    margin:
+                                                    const EdgeInsets.only(
+                                                        top: 4),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
                                                       horizontal: 8,
                                                       vertical: 2,
                                                     ),
                                                     decoration: BoxDecoration(
                                                       color: Colors.amber,
-                                                      borderRadius: BorderRadius.circular(10),
+                                                      borderRadius:
+                                                      BorderRadius.circular(
+                                                          10),
                                                     ),
                                                     child: Text(
                                                       'SELECTED',
                                                       style: TextStyle(
                                                         color: Colors.black,
                                                         fontSize: 9,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                        FontWeight.bold,
                                                       ),
                                                     ),
                                                   ),
@@ -1616,16 +1761,20 @@ class _GameBoardState extends State<GameBoard> {
                                     const SizedBox(height: 16),
                                     GridView.builder(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      physics:
+                                      const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: 4,
-                                        childAspectRatio: 0.7, // Changed from 1.1 to 0.9
+                                        childAspectRatio:
+                                        0.7, // Changed from 1.1 to 0.9
                                         crossAxisSpacing: 12,
                                         mainAxisSpacing: 12,
                                       ),
                                       itemCount: backgroundThemes.length,
                                       itemBuilder: (context, index) {
-                                        final isSelected = tempBackgroundTheme == index;
+                                        final isSelected =
+                                            tempBackgroundTheme == index;
                                         return GestureDetector(
                                           onTap: () {
                                             setStateDialog(() {
@@ -1633,45 +1782,59 @@ class _GameBoardState extends State<GameBoard> {
                                             });
                                           },
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 200),
-                                            padding: const EdgeInsets.all(4), // Changed from 6 to 4
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            padding: const EdgeInsets.all(
+                                                4), // Changed from 6 to 4
                                             decoration: BoxDecoration(
                                               color: isSelected
                                                   ? Colors.blue.withOpacity(0.2)
-                                                  : Colors.black.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(16),
+                                                  : Colors.black
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                              BorderRadius.circular(16),
                                               border: Border.all(
                                                 color: isSelected
                                                     ? Colors.blue
                                                     : Colors.grey[600]!,
                                                 width: isSelected ? 3 : 1,
                                               ),
-                                              boxShadow: isSelected ? [
+                                              boxShadow: isSelected
+                                                  ? [
                                                 BoxShadow(
-                                                  color: Colors.blue.withOpacity(0.3),
+                                                  color: Colors.blue
+                                                      .withOpacity(0.3),
                                                   blurRadius: 8,
                                                   spreadRadius: 2,
                                                 ),
-                                              ] : null,
+                                              ]
+                                                  : null,
                                             ),
                                             child: Column(
-                                              mainAxisSize: MainAxisSize.min, // Added
+                                              mainAxisSize:
+                                              MainAxisSize.min, // Added
                                               children: [
                                                 // Fixed height background color preview - CHANGED TO EXPANDED
                                                 Expanded(
-                                                  flex: 3, // Takes 3/5 of available space
+                                                  flex:
+                                                  3, // Takes 3/5 of available space
                                                   child: Container(
                                                     width: double.infinity,
                                                     decoration: BoxDecoration(
-                                                      color: backgroundThemes[index],
-                                                      borderRadius: BorderRadius.circular(8),
+                                                      color: backgroundThemes[
+                                                      index],
+                                                      borderRadius:
+                                                      BorderRadius.circular(
+                                                          8),
                                                       border: Border.all(
-                                                        color: Colors.white.withOpacity(0.3),
+                                                        color: Colors.white
+                                                            .withOpacity(0.3),
                                                         width: 2,
                                                       ),
                                                       boxShadow: [
                                                         BoxShadow(
-                                                          color: Colors.black.withOpacity(0.3),
+                                                          color: Colors.black
+                                                              .withOpacity(0.3),
                                                           blurRadius: 4,
                                                           offset: Offset(0, 2),
                                                         ),
@@ -1679,53 +1842,77 @@ class _GameBoardState extends State<GameBoard> {
                                                     ),
                                                   ),
                                                 ),
-                                                const SizedBox(height: 4), // Changed from 6 to 4
+                                                const SizedBox(
+                                                    height:
+                                                    4), // Changed from 6 to 4
                                                 // Text and selected indicator - WRAPPED IN EXPANDED
                                                 Expanded(
-                                                  flex: 2, // Takes 2/5 of available space
+                                                  flex:
+                                                  2, // Takes 2/5 of available space
                                                   child: Column(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .center,
                                                     children: [
                                                       Text(
-                                                        backgroundThemeNames[index],
+                                                        backgroundThemeNames[
+                                                        index],
                                                         style: TextStyle(
                                                           color: Colors.white,
-                                                          fontSize: 8, // Reduced further to make space
+                                                          fontSize:
+                                                          8, // Reduced further to make space
                                                           fontWeight: isSelected
                                                               ? FontWeight.bold
                                                               : FontWeight.w500,
                                                         ),
-                                                        textAlign: TextAlign.center,
-                                                        maxLines: 1, // Changed to 1 line only
-                                                        overflow: TextOverflow.ellipsis,
+                                                        textAlign:
+                                                        TextAlign.center,
+                                                        maxLines:
+                                                        1, // Changed to 1 line only
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
                                                       if (isSelected) ...[
-                                                        const SizedBox(height: 2),
+                                                        const SizedBox(
+                                                            height: 2),
                                                         Container(
-                                                          padding: const EdgeInsets.symmetric(
+                                                          padding:
+                                                          const EdgeInsets
+                                                              .symmetric(
                                                             horizontal: 3,
                                                             vertical: 1,
                                                           ),
-                                                          decoration: BoxDecoration(
+                                                          decoration:
+                                                          BoxDecoration(
                                                             color: Colors.blue,
-                                                            borderRadius: BorderRadius.circular(4),
+                                                            borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                                4),
                                                           ),
                                                           child: Text(
                                                             'ACTIVE',
                                                             style: TextStyle(
-                                                              color: Colors.white,
-                                                              fontSize: 5, // Made even smaller
-                                                              fontWeight: FontWeight.bold,
+                                                              color:
+                                                              Colors.white,
+                                                              fontSize:
+                                                              5, // Made even smaller
+                                                              fontWeight:
+                                                              FontWeight
+                                                                  .bold,
                                                             ),
                                                           ),
                                                         ),
                                                       ] else ...[
                                                         // Add invisible spacer when not selected to maintain consistent height
-                                                        const SizedBox(height: 1),
+                                                        const SizedBox(
+                                                            height: 1),
                                                         Container(
-                                                          height: 10, // Reduced from 12 to 10
+                                                          height:
+                                                          10, // Reduced from 12 to 10
                                                           width: 1,
-                                                          color: Colors.transparent,
+                                                          color: Colors
+                                                              .transparent,
                                                         ),
                                                       ],
                                                     ],
@@ -1762,8 +1949,10 @@ class _GameBoardState extends State<GameBoard> {
                                 onPressed: () => Navigator.pop(context),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.white,
-                                  side: BorderSide(color: Colors.grey[500]!, width: 2),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  side: BorderSide(
+                                      color: Colors.grey[500]!, width: 2),
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -1790,7 +1979,8 @@ class _GameBoardState extends State<GameBoard> {
                                 onPressed: () {
                                   setState(() {
                                     selectedBoardTheme = tempBoardTheme;
-                                    selectedBackgroundTheme = tempBackgroundTheme;
+                                    selectedBackgroundTheme =
+                                        tempBackgroundTheme;
                                   });
                                   _saveSettings();
                                   Navigator.pop(context);
@@ -1798,7 +1988,8 @@ class _GameBoardState extends State<GameBoard> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green[600],
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -1834,7 +2025,8 @@ class _GameBoardState extends State<GameBoard> {
       },
     );
   }
-// Helper method for theme sections
+
+  // Helper method for theme sections
   Widget _buildThemeSection({
     required String title,
     required IconData icon,
@@ -1885,10 +2077,175 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
+  // Simple evaluation function to score the board
+  double _evaluateBoard(List<List<ChessPiece?>> board) {
+    double score = 0;
 
+    // Piece values
+    const Map<ChessPieceType, double> pieceValues = {
+      ChessPieceType.pawn: 1,
+      ChessPieceType.knight: 3,
+      ChessPieceType.bishop: 3.5,
+      ChessPieceType.rook: 5,
+      ChessPieceType.queen: 9,
+      ChessPieceType.king: 100,
+    };
 
+    // Count material
+    for (int row = 0; row < 8; row++) {
+      for (int col = 0; col < 8; col++) {
+        final piece = board[row][col];
+        if (piece != null) {
+          final value = pieceValues[piece.type]!;
+          score += piece.isWhite ? value : -value;
+        }
+      }
+    }
 
-  // New method to toggle AI mode
+    return score;
+  }
+
+  // Minimax algorithm with alpha-beta pruning
+  Map<String, dynamic> _minimax(
+      int depth, bool isMaximizing, double alpha, double beta) {
+    // Base case: reached maximum depth or game over
+    if (depth == 0) {
+      return {'score': _evaluateBoard(board)};
+    }
+
+    // Get all possible moves for current player
+    List<Map<String, dynamic>> allMoves = [];
+    for (int row = 0; row < 8; row++) {
+      for (int col = 0; col < 8; col++) {
+        final piece = board[row][col];
+        if (piece != null && piece.isWhite == isMaximizing) {
+          final moves = calculateValidMoves(row, col, piece);
+          for (final move in moves) {
+            allMoves.add({
+              'fromRow': row,
+              'fromCol': col,
+              'toRow': move[0],
+              'toCol': move[1],
+              'piece': piece,
+            });
+          }
+        }
+      }
+    }
+
+    // Sort moves to improve alpha-beta pruning (captures first)
+    allMoves.sort((a, b) {
+      final aCapture = board[a['toRow']][a['toCol']] != null;
+      final bCapture = board[b['toRow']][b['toCol']] != null;
+      if (aCapture && !bCapture) return -1;
+      if (!aCapture && bCapture) return 1;
+      return 0;
+    });
+
+    Map<String, dynamic> bestMove = {
+      'score': isMaximizing ? double.negativeInfinity : double.infinity
+    };
+
+    for (final move in allMoves) {
+      // Simulate move
+      final originalPiece = board[move['toRow']][move['toCol']];
+      board[move['toRow']][move['toCol']] = move['piece'];
+      board[move['fromRow']][move['fromCol']] = null;
+
+      // Update king position if king moved
+      List<int>? originalWhiteKingPos;
+      List<int>? originalBlackKingPos;
+      if (move['piece'].type == ChessPieceType.king) {
+        if (move['piece'].isWhite) {
+          originalWhiteKingPos = List.from(whiteKingPosition);
+          whiteKingPosition = [move['toRow'], move['toCol']];
+        } else {
+          originalBlackKingPos = List.from(blackKingPosition);
+          blackKingPosition = [move['toRow'], move['toCol']];
+        }
+      }
+
+      // Recursive call
+      final result = _minimax(depth - 1, !isMaximizing, alpha, beta);
+
+      // Undo move
+      board[move['fromRow']][move['fromCol']] = move['piece'];
+      board[move['toRow']][move['toCol']] = originalPiece;
+
+      // Restore king position if needed
+      if (move['piece'].type == ChessPieceType.king) {
+        if (move['piece'].isWhite) {
+          whiteKingPosition = originalWhiteKingPos!;
+        } else {
+          blackKingPosition = originalBlackKingPos!;
+        }
+      }
+
+      // Update best move
+      if (isMaximizing) {
+        if (result['score'] > bestMove['score']) {
+          bestMove = {
+            'score': result['score'],
+            'fromRow': move['fromRow'],
+            'fromCol': move['fromCol'],
+            'toRow': move['toRow'],
+            'toCol': move['toCol'],
+          };
+        }
+        alpha = max(alpha, bestMove['score']);
+      } else {
+        if (result['score'] < bestMove['score']) {
+          bestMove = {
+            'score': result['score'],
+            'fromRow': move['fromRow'],
+            'fromCol': move['fromCol'],
+            'toRow': move['toRow'],
+            'toCol': move['toCol'],
+          };
+        }
+        beta = min(beta, bestMove['score']);
+      }
+
+      // Alpha-beta pruning
+      if (beta <= alpha) {
+        break;
+      }
+    }
+
+    return bestMove;
+  }
+
+  // Improved hint method using minimax
+  void _showHint() {
+    if (isGameOver ||
+        isPromoting ||
+        (isPlayingAgainstAI && !isWhiteTurn) ||
+        !showHints) return;
+
+    setState(() {
+      hintMove = null;
+      isCalculatingHint = true;
+    });
+
+    // Use a future to avoid blocking the UI
+    Future.delayed(const Duration(milliseconds: 100), () {
+      final bestMove =
+      _minimax(2, isWhiteTurn, double.negativeInfinity, double.infinity);
+
+      setState(() {
+        hintMove = [
+          bestMove['fromRow'],
+          bestMove['fromCol'],
+          bestMove['toRow'],
+          bestMove['toCol'],
+        ];
+        isCalculatingHint = false;
+      });
+
+      _playSound('hint.mp3');
+    });
+  }
+
   void _toggleAIMode() {
     setState(() {
       isPlayingAgainstAI = !isPlayingAgainstAI;
@@ -1897,7 +2254,6 @@ class _GameBoardState extends State<GameBoard> {
     resetGame();
   }
 
-  // New method to toggle coordinates
   void _toggleCoordinates() {
     setState(() {
       showCoordinates = !showCoordinates;
@@ -1905,7 +2261,16 @@ class _GameBoardState extends State<GameBoard> {
     _saveSettings();
   }
 
-  // Build coordinate labels
+  void _toggleHints() {
+    setState(() {
+      showHints = !showHints;
+      if (!showHints) {
+        hintMove = null;
+      }
+    });
+    _saveSettings();
+  }
+
   Widget _buildCoordinateLabel(bool isFile, int index) {
     return Container(
       alignment: Alignment.center,
@@ -1926,6 +2291,25 @@ class _GameBoardState extends State<GameBoard> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(label, style: const TextStyle(fontSize: 14)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -1961,10 +2345,19 @@ class _GameBoardState extends State<GameBoard> {
             ),
           ],
         ),
-
-
-
         actions: [
+          // Hint button
+          IconButton(
+            onPressed: isCalculatingHint ? null : _showHint,
+            icon: isCalculatingHint
+                ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+                : const Icon(Icons.lightbulb_outline),
+            tooltip: 'Show hint',
+          ),
           // Coordinates toggle button
           IconButton(
             onPressed: _toggleCoordinates,
@@ -1992,6 +2385,7 @@ class _GameBoardState extends State<GameBoard> {
                   builder: (context) => SettingsScreen(
                     isDarkMode: isDarkMode,
                     soundEnabled: soundEnabled,
+                    showHints: showHints,
                     onThemeChanged: (value) {
                       setState(() {
                         isDarkMode = value;
@@ -2001,6 +2395,12 @@ class _GameBoardState extends State<GameBoard> {
                     onSoundChanged: (value) {
                       setState(() {
                         soundEnabled = value;
+                      });
+                      _saveSettings();
+                    },
+                    onHintsChanged: (value) {
+                      setState(() {
+                        showHints = value;
                       });
                       _saveSettings();
                     },
@@ -2017,8 +2417,6 @@ class _GameBoardState extends State<GameBoard> {
                       _saveSettings();
                     },
                   ),
-
-
                 ),
               );
             },
@@ -2148,14 +2546,12 @@ class _GameBoardState extends State<GameBoard> {
                 ),
               ),
 
-
-
-
               // Chess board with coordinates
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final boardSide = constraints.maxWidth < constraints.maxHeight
+                    final boardSide =
+                    constraints.maxWidth < constraints.maxHeight
                         ? constraints.maxWidth
                         : constraints.maxHeight;
                     final margin = 8.0;
@@ -2191,13 +2587,20 @@ class _GameBoardState extends State<GameBoard> {
                                   itemBuilder: (context, index) {
                                     final row = index ~/ 8;
                                     final col = index % 8;
-                                    final isSelected =
-                                        selectedRow == row && selectedCol == col;
-                                    final isValidMove = validMoves.any((p) =>
-                                    p[0] == row && p[1] == col);
+                                    final isSelected = selectedRow == row &&
+                                        selectedCol == col;
+                                    final isValidMove = validMoves
+                                        .any((p) => p[0] == row && p[1] == col);
                                     final isCapturable = isValidMove &&
                                         board[row][col] != null &&
                                         board[row][col]!.isWhite != isWhiteTurn;
+
+                                    // Check if this square is part of the hint
+                                    final isHintSquare = hintMove != null &&
+                                        ((row == hintMove![0] &&
+                                            col == hintMove![1]) ||
+                                            (row == hintMove![2] &&
+                                                col == hintMove![3]));
 
                                     bool isKingInCheck = false;
                                     if (checkStatus) {
@@ -2229,6 +2632,7 @@ class _GameBoardState extends State<GameBoard> {
                                       isDarkMode: isDarkMode,
                                       boardColors:
                                       boardThemes[selectedBoardTheme],
+                                      isHint: isHintSquare,
                                     );
                                   },
                                 ),
@@ -2247,8 +2651,8 @@ class _GameBoardState extends State<GameBoard> {
                                   children: List.generate(
                                       8,
                                           (i) => Expanded(
-                                          child: _buildCoordinateLabel(
-                                              true, i))),
+                                          child:
+                                          _buildCoordinateLabel(true, i))),
                                 ),
                               ),
                               // BOTTOM files
@@ -2261,8 +2665,8 @@ class _GameBoardState extends State<GameBoard> {
                                   children: List.generate(
                                       8,
                                           (i) => Expanded(
-                                          child: _buildCoordinateLabel(
-                                              true, i))),
+                                          child:
+                                          _buildCoordinateLabel(true, i))),
                                 ),
                               ),
                               // LEFT ranks
@@ -2275,8 +2679,8 @@ class _GameBoardState extends State<GameBoard> {
                                   children: List.generate(
                                       8,
                                           (i) => Expanded(
-                                          child: _buildCoordinateLabel(
-                                              false, i))),
+                                          child:
+                                          _buildCoordinateLabel(false, i))),
                                 ),
                               ),
                               // RIGHT ranks
@@ -2289,8 +2693,8 @@ class _GameBoardState extends State<GameBoard> {
                                   children: List.generate(
                                       8,
                                           (i) => Expanded(
-                                          child: _buildCoordinateLabel(
-                                              false, i))),
+                                          child:
+                                          _buildCoordinateLabel(false, i))),
                                 ),
                               ),
                             ],
@@ -2301,14 +2705,6 @@ class _GameBoardState extends State<GameBoard> {
                   },
                 ),
               ),
-
-
-
-
-
-
-
-
 
               // Black pieces taken
               SizedBox(
@@ -2325,14 +2721,10 @@ class _GameBoardState extends State<GameBoard> {
                 ),
               ),
 
-
-
-
-
               // Bottom action bar
-// Bottom action bar
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                 decoration: BoxDecoration(
                   color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
                   boxShadow: [
@@ -2343,38 +2735,58 @@ class _GameBoardState extends State<GameBoard> {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildActionButton(
-                      icon: Icons.refresh,
-                      label: 'New Game',
-                      color: Colors.green,
-                      onPressed: _showNewGameDialog,
-                    ),
-                    _buildActionButton(
-                      icon: Icons.palette,
-                      label: 'Themes',
-                      color: Colors.blue,
-                      onPressed: _showThemeDialog,
-                    ),
-                    _buildActionButton(
-                      icon: Icons.home,
-                      label: 'Main Menu',
-                      color: Colors.orange,
-                      onPressed: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                              (route) => false,
-                        );
-                      },
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      _buildActionButton(
+                        icon: Icons.refresh,
+                        label: 'New Game',
+                        color: Colors.green,
+                        onPressed: _showNewGameDialog,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionButton(
+                        icon: Icons.palette,
+                        label: 'Themes',
+                        color: Colors.blue,
+                        onPressed: _showThemeDialog,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionButton(
+                        icon: showHints ? Icons.visibility : Icons.visibility_off,
+                        label: showHints ? 'Hide Hints' : 'Show Hints',
+                        color: Colors.purple,
+                        onPressed: _toggleHints,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionButton(
+                        icon: Icons.undo,
+                        label: 'Undo',
+                        color: Colors.orange,
+                        onPressed: moveHistory.isEmpty
+                            ? () {}
+                            : _undoMove,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionButton(
+                        icon: Icons.home,
+                        label: 'Main Menu',
+                        color: Colors.orange,
+                        onPressed: () {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()),
+                                (route) => false,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
-
-
 
 
 
@@ -2391,4 +2803,36 @@ class _GameBoardState extends State<GameBoard> {
     _confettiController.dispose();
     super.dispose();
   }
+}
+
+class MoveHistory {
+  ChessPiece? movedPiece;
+  ChessPiece? capturedPiece;
+  int fromRow;
+  int fromCol;
+  int toRow;
+  int toCol;
+  bool wasPromotion;
+  bool wasKingMove;
+  bool wasRookMove;
+  bool wasCastling;
+  bool wasEnPassant;
+  bool wasCheck;
+  bool wasCheckmate;
+
+  MoveHistory({
+    required this.movedPiece,
+    this.capturedPiece,
+    required this.fromRow,
+    required this.fromCol,
+    required this.toRow,
+    required this.toCol,
+    this.wasPromotion = false,
+    this.wasKingMove = false,
+    this.wasRookMove = false,
+    this.wasCastling = false,
+    this.wasEnPassant = false,
+    this.wasCheck = false,
+    this.wasCheckmate = false,
+  });
 }

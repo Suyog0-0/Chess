@@ -11,6 +11,7 @@ class Square extends StatelessWidget {
   final bool isKingInCheck;
   final bool isDarkMode;
   final List<Color> boardColors;
+  final bool isHint; // New property for hint
 
   const Square({
     super.key,
@@ -23,14 +24,17 @@ class Square extends StatelessWidget {
     this.isKingInCheck = false,
     this.isDarkMode = true,
     this.boardColors = const [Colors.grey, Colors.black],
+    this.isHint = false, // Default to false
   });
 
   @override
   Widget build(BuildContext context) {
     Color? squareColor;
 
-    // Priority order: king in check > selected > capturable > valid move > normal color
-    if (isKingInCheck) {
+    // Priority order: hint > king in check > selected > capturable > valid move > normal color
+    if (isHint) {
+      squareColor = Colors.blue[300]!.withOpacity(0.6);
+    } else if (isKingInCheck) {
       squareColor = Colors.red[800];
     } else if (isSelected) {
       squareColor = Colors.green[800];
@@ -50,7 +54,7 @@ class Square extends StatelessWidget {
           color: squareColor,
           border: Border.all(
             color:
-                squareColor!, // Use the same color as background to hide the border
+            squareColor!, // Use the same color as background to hide the border
             width: 0.5, // Very thin border
           ),
         ),
@@ -74,8 +78,8 @@ class Square extends StatelessWidget {
                   color: isDarkMode
                       ? (piece!.isWhite ? Colors.white : Colors.black)
                       : (piece!.isWhite
-                          ? const Color(0xfff6f6f6)
-                          : Colors.black),
+                      ? const Color(0xfff6f6f6)
+                      : Colors.black),
                   fit: BoxFit.contain,
                 ),
               ),

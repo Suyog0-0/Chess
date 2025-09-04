@@ -913,6 +913,24 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
+  Widget _buildAppBarActionButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+    bool isDisabled = false,
+    Widget? child,
+  }) {
+    return IconButton(
+      icon: child ?? Icon(icon, size: 22),
+      color: isDarkMode
+          ? (isDisabled ? Colors.grey[600] : Colors.white)
+          : (isDisabled ? Colors.grey[400] : Colors.black),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      splashRadius: 20,
+    );
+  }
+
   Widget _buildEnhancedActionButton({
     required IconData icon,
     required String label,
@@ -2378,116 +2396,199 @@ class _GameBoardState extends State<GameBoard> {
 
     return Scaffold(
       backgroundColor: backgroundThemes[selectedBackgroundTheme],
+
+// App Bar
+
+      // App Bar
       appBar: AppBar(
-        backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
         foregroundColor: isDarkMode ? Colors.white : Colors.black,
-        elevation: 0,
-        title: Row(
-          children: [
-            Icon(Icons.castle, color: isDarkMode ? Colors.white : Colors.black),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                'Suyog Chess',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
-                overflow: TextOverflow.ellipsis, // Shows … if space is tight
-              ),
-            ),
-          ],
+        elevation: 6,
+        shadowColor: Colors.black.withOpacity(0.4),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
         ),
+        title: Container(
+          padding: const EdgeInsets.only(left: 8), // Add left padding to position the icon
+          alignment: Alignment.centerLeft, // Align to left
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.amber[800] : Colors.amber[600],
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.castle,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ),
+        // Remove centerTitle: true to allow left alignment
         actions: [
           // Hint button
-          IconButton(
-            onPressed: isCalculatingHint ? null : _showHint,
-            icon: isCalculatingHint
-                ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : const Icon(Icons.lightbulb_outline),
+          _buildAppBarActionButton(
+            icon: Icons.lightbulb_outline,
             tooltip: 'Show hint',
+            onPressed: isCalculatingHint ? null : _showHint,
+            isDisabled: isCalculatingHint,
+            child: isCalculatingHint
+                ? SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            )
+                : null,
           ),
-          // Coordinates toggle button
-          IconButton(
-            onPressed: _toggleCoordinates,
-            icon: Icon(showCoordinates ? Icons.grid_on : Icons.grid_off),
+
+          // Coordinates toggle
+          _buildAppBarActionButton(
+            icon: showCoordinates ? Icons.grid_on : Icons.grid_off,
             tooltip: showCoordinates ? 'Hide coordinates' : 'Show coordinates',
+            onPressed: _toggleCoordinates,
           ),
-          // AI Mode Toggle Button
-          IconButton(
-            onPressed: _toggleAIMode,
-            icon: Icon(isPlayingAgainstAI ? Icons.smart_toy : Icons.people),
+
+          // AI mode toggle
+          _buildAppBarActionButton(
+            icon: isPlayingAgainstAI ? Icons.smart_toy : Icons.people,
             tooltip: isPlayingAgainstAI
                 ? 'Playing against AI - Tap to play with friend'
                 : 'Playing with friend - Tap to play against AI',
+            onPressed: _toggleAIMode,
           ),
-          IconButton(
-            onPressed: _showThemeDialog,
-            icon: const Icon(Icons.palette),
+
+          // Theme selector
+          _buildAppBarActionButton(
+            icon: Icons.palette,
             tooltip: 'Change board theme',
+            onPressed: _showThemeDialog,
           ),
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SettingsScreen(
-                    isDarkMode: isDarkMode,
-                    soundEnabled: soundEnabled,
-                    showHints: showHints,
-                    onThemeChanged: (value) {
-                      setState(() {
-                        isDarkMode = value;
-                      });
-                      _saveSettings();
-                    },
-                    onSoundChanged: (value) {
-                      setState(() {
-                        soundEnabled = value;
-                      });
-                      _saveSettings();
-                    },
-                    onHintsChanged: (value) {
-                      setState(() {
-                        showHints = value;
-                      });
-                      _saveSettings();
-                    },
-                    onBackgroundColorChanged: (index) {
-                      setState(() {
-                        selectedBackgroundTheme = index;
-                      });
-                      _saveSettings();
-                    },
-                    onBoardThemeChanged: (index) {
-                      setState(() {
-                        selectedBoardTheme = index;
-                      });
-                      _saveSettings();
-                    },
+
+          // More options menu
+          PopupMenuButton<int>(
+            icon: Icon(
+              Icons.more_vert,
+              color: isDarkMode ? Colors.white : Colors.black,
+              size: 26,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 1,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.settings,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                    size: 22,
                   ),
+                  title: Text(
+                    'Settings',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsScreen(
+                          isDarkMode: isDarkMode,
+                          soundEnabled: soundEnabled,
+                          showHints: showHints,
+                          onThemeChanged: (value) {
+                            setState(() {
+                              isDarkMode = value;
+                            });
+                            _saveSettings();
+                          },
+                          onSoundChanged: (value) {
+                            setState(() {
+                              soundEnabled = value;
+                            });
+                            _saveSettings();
+                          },
+                          onHintsChanged: (value) {
+                            setState(() {
+                              showHints = value;
+                            });
+                            _saveSettings();
+                          },
+                          onBackgroundColorChanged: (index) {
+                            setState(() {
+                              selectedBackgroundTheme = index;
+                            });
+                            _saveSettings();
+                          },
+                          onBoardThemeChanged: (index) {
+                            setState(() {
+                              selectedBoardTheme = index;
+                            });
+                            _saveSettings();
+                          },
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-          ),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                isDarkMode = !isDarkMode;
-              });
-              _saveSettings();
-            },
-            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            tooltip: 'Toggle dark mode',
+              ),
+              PopupMenuItem(
+                value: 2,
+                child: ListTile(
+                  leading: Icon(
+                    isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                    size: 22,
+                  ),
+                  title: Text(
+                    isDarkMode ? 'Light Mode' : 'Dark Mode',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      isDarkMode = !isDarkMode;
+                    });
+                    _saveSettings();
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
+
+
+
+
+
+
+
+
+
+
+
+
       body: Stack(
         children: [
           // Confetti overlay

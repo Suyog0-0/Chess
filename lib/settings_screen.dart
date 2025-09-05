@@ -485,13 +485,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       width: 3,
                     ),
                   ),
-                  child: GridView.count(
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    children: List.generate(4, (j) {
-                      final color = theme[(j + j ~/ 2) % 2];
-                      return Container(color: color);
-                    }),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(9), // Slightly smaller than container radius
+                    child: GridView.count(
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      padding: EdgeInsets.zero,
+                      crossAxisSpacing: 0,
+                      mainAxisSpacing: 0,
+                      childAspectRatio: 1,
+                      children: List.generate(4, (j) {
+                        final color = theme[(j + j ~/ 2) % 2];
+                        return Container(color: color);
+                      }),
+                    ),
                   ),
                 ),
               );

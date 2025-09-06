@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'game_board.dart';
+
 
 /* ==========================================================
  *  LoginScreen – Clean, Modern & Responsive
@@ -15,11 +17,11 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   /* ---------- Controllers ---------- */
   final TextEditingController _usernameCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   bool _isLoading = false;
   bool _obscurePass = true;
@@ -46,11 +48,13 @@ class _LoginScreenState extends State<LoginScreen>
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     _ctrl.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
   /* ---------- Handlers ---------- */
   Future<void> _login() async {
+    _playClickSound(); //For clicking buttons sound
     if (_usernameCtrl.text.trim().isEmpty ||
         _passwordCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,9 +77,18 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _playAsGuest() {
+    _playClickSound(); //For clicking buttons sound
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const GameBoard()),
     );
+  }
+
+  void _playClickSound() async {
+    try {
+      await _audioPlayer.play(AssetSource('sounds/click.mp3'));
+    } catch (e) {
+      print('Error playing sound: $e');
+    }
   }
 
   /* ==========================================================
@@ -140,7 +153,9 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           const SizedBox(height: 12),
                           _GuestButton(
-                            onTap: _playAsGuest,
+                            onTap: () {
+                              _playAsGuest();
+                            },
                             animation: _fade,
                           ),
                           const SizedBox(height: 8),
@@ -148,7 +163,19 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _Footer(animation: _fade),
+                    _Footer(
+                      animation: _fade,
+                      onTap: () {
+                        _playClickSound();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Sign-up feature coming soon'),
+                            backgroundColor: Colors.blueAccent,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -454,7 +481,8 @@ class _GuestButton extends StatelessWidget {
 
 class _Footer extends StatelessWidget {
   final Animation<double> animation;
-  const _Footer({required this.animation});
+  final VoidCallback onTap;
+  const _Footer({required this.animation, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -470,13 +498,7 @@ class _Footer extends StatelessWidget {
               style: TextStyle(color: Colors.grey[400], fontSize: 13),
             ),
             GestureDetector(
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Sign-up feature coming soon'),
-                  backgroundColor: Colors.blueAccent,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              ),
+              onTap: onTap,
               child: Text(
                 'Create Account',
                 style: TextStyle(
@@ -492,3 +514,5 @@ class _Footer extends StatelessWidget {
     );
   }
 }
+
+

@@ -5,6 +5,7 @@ import 'package:suyog_chess_sc/helper/helper_methods.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:confetti/confetti.dart';
+import 'package:suyog_chess_sc/resignation_screen.dart';
 import 'components/dead_piece.dart';
 import 'settings_screen.dart';
 import 'login_screen.dart';
@@ -1672,6 +1673,8 @@ class _GameBoardState extends State<GameBoard> {
     });
   }
 
+
+  //Resign game method
   void _resignGame() {
     if (isGameOver) return;
 
@@ -1823,7 +1826,9 @@ class _GameBoardState extends State<GameBoard> {
                           winner = isWhiteTurn ? 'Black' : 'White';
                         });
                         _playSound('resign.mp3');
-                        _showWinDialog();
+
+                        // ✅ Changed: Show resignation screen instead of win dialog
+                        _showResignationDialog();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red[600],
@@ -1860,6 +1865,9 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
+
+
+
 // Helper method for stat rows in resign dialog
   Widget _buildResignStatRow(
       {required IconData icon, required String label, required String value}) {
@@ -1891,6 +1899,38 @@ class _GameBoardState extends State<GameBoard> {
       ],
     );
   }
+
+  // Add this new method to show the resignation screen:
+  void _showResignationDialog() {
+    _playSound('resign.mp3');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ResignationScreen(
+        isWhiteResigned: isWhiteTurn,
+        moveCount: moveCount,
+        gameDuration: DateTime.now().difference(gameStartTime!),
+        whitePiecesCaptured: whitePiecesTaken.length,
+        blackPiecesCaptured: blackPiecesTaken.length,
+        wasPlayingAgainstAI: isPlayingAgainstAI,
+        onPlayAgain: () {
+          Navigator.pop(context);
+          resetGame();
+        },
+        onBackToMenu: () {
+          Navigator.pop(context);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+          );
+        },
+      ),
+    );
+  }
+
+
 
   void _showNewGameDialog() {
     showDialog(

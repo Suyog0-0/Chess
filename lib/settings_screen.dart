@@ -43,23 +43,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _selectedBackgroundColorIndex = 0;
   int _selectedBoardTheme = 0;
 
-  final List<Color> _backgroundColors = [
-    Colors.grey[900]!,
-    const Color(0xFF2C1810),
-    const Color(0xFF1A237E),
-    const Color(0xFF4A148C),
-    const Color(0xFF1B5E20),
-    const Color(0xFFBF360C),
-    Colors.teal[800]!,
-    Colors.brown[800]!,
-  ];
 
   final List<List<Color>> _boardThemes = [
-    [const Color(0xFFF0D9B5), const Color(0xFFB58863)],
-    [const Color(0xFFDDB88C), const Color(0xFFA55A3E)],
-    [const Color(0xFFE8EDF2), const Color(0xFF8CA2AD)],
-    [const Color(0xFFBEBEBE), const Color(0xFF888888)],
-    [const Color(0xFFFFCE9E), const Color(0xFFD18B47)],
+    [Colors.grey[300]!, Colors.grey[700]!], // Default
+    [const Color(0xFFF0D9B5), const Color(0xFFB58863)], // Classic wood
+    [const Color(0xFFE8EBF0), const Color(0xFF7D8796)], // Blue gray
+    [const Color(0xFFFCE4EC), const Color(0xFFE91E63)], // Pink
+    [const Color(0xFFE8F5E8), const Color(0xFF4CAF50)], // Green
+    [const Color(0xFFFFF3E0), const Color(0xFFFF9800)], // Orange
+  ];
+
+
+  final List<Color> _backgroundColors = [
+    Colors.grey[900]!, // Default dark (index 0)
+    const Color(0xFF2C1810), // Dark wood (index 1)
+    const Color(0xFF1A237E), // Deep blue (index 2)
+    const Color(0xFF4A148C), // Deep purple (index 3)
+    const Color(0xFF1B5E20), // Deep green (index 4)
+    const Color(0xFFBF360C), // Deep orange (index 5)
+    Colors.teal[800]!, // Teal (index 6)
+    Colors.brown[800]!, // Brown (index 7)
   ];
 
   /* ------------------------------------------

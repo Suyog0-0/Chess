@@ -11,7 +11,7 @@ class Square extends StatelessWidget {
   final bool isKingInCheck;
   final bool isDarkMode;
   final List<Color> boardColors;
-  final bool isHint;
+  final bool isHint; // New property for hint
 
   const Square({
     super.key,
@@ -24,7 +24,7 @@ class Square extends StatelessWidget {
     this.isKingInCheck = false,
     this.isDarkMode = true,
     this.boardColors = const [Colors.grey, Colors.black],
-    this.isHint = false,
+    this.isHint = false, // Default to false
   });
 
   @override
@@ -34,6 +34,8 @@ class Square extends StatelessWidget {
     // Priority order: hint > king in check > selected > capturable > valid move > normal color
     if (isHint) {
       squareColor = Colors.blue[300]!.withOpacity(0.6);
+    } else if (isKingInCheck) {
+      squareColor = Colors.red[800];
     } else if (isSelected) {
       squareColor = Colors.green[800];
     } else if (isCapturable) {
@@ -47,33 +49,18 @@ class Square extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.zero,
+        margin: EdgeInsets.zero, // Ensure no margin
         decoration: BoxDecoration(
           color: squareColor,
           border: Border.all(
-            color: squareColor!,
-            width: 0.5,
+            color:
+            squareColor!, // Use the same color as background to hide the border
+            width: 0.5, // Very thin border
           ),
-          // Add check indicator (red pulsing glow)
-          boxShadow: isKingInCheck
-              ? [
-            BoxShadow(
-              color: Colors.red.withOpacity(0.7),
-              blurRadius: 15,
-              spreadRadius: 3,
-            ),
-            BoxShadow(
-              color: Colors.red.withOpacity(0.4),
-              blurRadius: 25,
-              spreadRadius: 5,
-            ),
-          ]
-              : null,
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Valid move indicator
             if (isValidMove && piece == null)
               Container(
                 width: 15,
@@ -83,8 +70,6 @@ class Square extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-
-            // Chess piece
             if (piece != null)
               Container(
                 padding: const EdgeInsets.all(4),
@@ -96,19 +81,6 @@ class Square extends StatelessWidget {
                       ? const Color(0xfff6f6f6)
                       : Colors.black),
                   fit: BoxFit.contain,
-                ),
-              ),
-
-            // King in check indicator (animated pulse)
-            if (isKingInCheck)
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.red.withOpacity(0.3),
-                ),
-                child: const SizedBox(
-                  width: 30,
-                  height: 30,
                 ),
               ),
           ],

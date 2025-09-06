@@ -14,8 +14,6 @@ import 'stalemate_screen.dart';
 import 'game_analysis_screen.dart';
 import 'dart:math';
 
-
-
 class GameBoard extends StatefulWidget {
   const GameBoard({super.key});
 
@@ -79,7 +77,6 @@ class _GameBoardState extends State<GameBoard> {
     [const Color(0xFFFFF3E0), const Color(0xFFFF9800)], // Orange
   ];
 
-
   final List<Color> backgroundThemes = [
     Colors.grey[900]!, // Default dark (index 0)
     const Color(0xFF2C1810), // Dark wood (index 1)
@@ -91,9 +88,6 @@ class _GameBoardState extends State<GameBoard> {
     Colors.brown[800]!, // Brown (index 7)
   ];
 
-
-
-
   // Castling tracking
   bool whiteKingMoved = false;
   bool blackKingMoved = false;
@@ -101,9 +95,6 @@ class _GameBoardState extends State<GameBoard> {
   bool whiteRightRookMoved = false;
   bool blackLeftRookMoved = false;
   bool blackRightRookMoved = false;
-
-
-
 
   // Game state
   bool isGameOver = false;
@@ -533,8 +524,14 @@ class _GameBoardState extends State<GameBoard> {
 
       case ChessPieceType.king:
         var directions = [
-          [-1, 0], [1, 0], [0, -1], [0, 1],
-          [-1, -1], [-1, 1], [1, -1], [1, 1]
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+          [-1, -1],
+          [-1, 1],
+          [1, -1],
+          [1, 1]
         ];
         for (var dir in directions) {
           int newRow = row + dir[0];
@@ -668,10 +665,29 @@ class _GameBoardState extends State<GameBoard> {
       hintMove = null;
     });
 
+    // In the movePiece method, replace the pawn promotion check with this:
     // Check for pawn promotion
     if (selectedPiece!.type == ChessPieceType.pawn &&
         ((selectedPiece!.isWhite && newRow == 0) ||
             (!selectedPiece!.isWhite && newRow == 7))) {
+      // Move the pawn to the promotion square first
+      if (board[newRow][newCol] != null) {
+        var capturedPiece = board[newRow][newCol];
+        if (capturedPiece!.isWhite) {
+          whitePiecesTaken.add(capturedPiece);
+        } else {
+          blackPiecesTaken.add(capturedPiece);
+        }
+        _playSound('capture.mp3');
+      } else {
+        _playSound('move.mp3');
+      }
+
+      // Move the piece to the promotion square
+      board[newRow][newCol] = selectedPiece;
+      board[selectedRow][selectedCol] = null;
+
+      // Set promotion state
       setState(() {
         isPromoting = true;
         promotionRow = newRow;
@@ -693,16 +709,6 @@ class _GameBoardState extends State<GameBoard> {
     } else {
       _playSound('move.mp3');
     }
-
-
-
-
-
-
-
-
-
-
 
     bool _isStalemate(bool isWhite) {
       // Check if the king is NOT in check
@@ -780,7 +786,6 @@ class _GameBoardState extends State<GameBoard> {
       _playSound('check.mp3');
     }
 
-
     // Check for checkmate
     bool checkmate = _isCheckmate(!isWhiteTurn);
     if (checkmate) {
@@ -802,7 +807,6 @@ class _GameBoardState extends State<GameBoard> {
       _showStalemateDialog();
       return;
     }
-
 
     // Switch turns
     isWhiteTurn = !isWhiteTurn;
@@ -931,7 +935,9 @@ class _GameBoardState extends State<GameBoard> {
     _playSound('move.mp3');
   }
 
+// In the GameBoard class, replace the promotePawn method with this corrected version:
   void promotePawn(ChessPieceType newType) {
+    // Replace the pawn with the new piece type
     board[promotionRow][promotionCol] = ChessPiece(
       type: newType,
       isWhite: isWhitePromoting,
@@ -1057,14 +1063,10 @@ class _GameBoardState extends State<GameBoard> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: isDisabled
-                ? Colors.grey[700]
-                : color.withOpacity(0.15),
+            color: isDisabled ? Colors.grey[700] : color.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDisabled
-                  ? Colors.grey[600]!
-                  : color.withOpacity(0.5),
+              color: isDisabled ? Colors.grey[600]! : color.withOpacity(0.5),
               width: 1.5,
             ),
           ),
@@ -1072,9 +1074,7 @@ class _GameBoardState extends State<GameBoard> {
             icon: Icon(
               icon,
               size: 22,
-              color: isDisabled
-                  ? Colors.grey[500]
-                  : color,
+              color: isDisabled ? Colors.grey[500] : color,
             ),
             onPressed: onPressed,
             tooltip: label,
@@ -1086,15 +1086,12 @@ class _GameBoardState extends State<GameBoard> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: isDisabled
-                ? Colors.grey[500]
-                : Colors.grey[300],
+            color: isDisabled ? Colors.grey[500] : Colors.grey[300],
           ),
         ),
       ],
     );
   }
-
 
   Widget _buildPromotionOption(ChessPieceType type, String label) {
     return Column(
@@ -1135,10 +1132,6 @@ class _GameBoardState extends State<GameBoard> {
       ],
     );
   }
-
-
-
-
 
   // Replace lines 1818-1940 with:
   // Replace lines 1818-1940 with:
@@ -1308,7 +1301,8 @@ class _GameBoardState extends State<GameBoard> {
                         const SizedBox(height: 8),
                         // Winner Announcement with slide animation
                         FutureBuilder(
-                          future: Future.delayed(const Duration(milliseconds: 200)),
+                          future:
+                          Future.delayed(const Duration(milliseconds: 200)),
                           builder: (context, snapshot) {
                             return TweenAnimationBuilder(
                               tween: Tween(begin: 0.0, end: 1.0),
@@ -1429,7 +1423,8 @@ class _GameBoardState extends State<GameBoard> {
                         // Play Again Button
                         Expanded(
                           child: FutureBuilder(
-                            future: Future.delayed(const Duration(milliseconds: 400)),
+                            future: Future.delayed(
+                                const Duration(milliseconds: 400)),
                             builder: (context, snapshot) {
                               return TweenAnimationBuilder(
                                 tween: Tween(begin: 0.0, end: 1.0),
@@ -1448,12 +1443,14 @@ class _GameBoardState extends State<GameBoard> {
                                     Navigator.pop(context);
                                     resetGame();
                                   },
-                                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                                  icon: const Icon(Icons.refresh_rounded,
+                                      size: 20),
                                   label: const Text('Play Again'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green.shade600,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -1468,7 +1465,8 @@ class _GameBoardState extends State<GameBoard> {
                         // Analysis Button
                         Expanded(
                           child: FutureBuilder(
-                            future: Future.delayed(const Duration(milliseconds: 600)),
+                            future: Future.delayed(
+                                const Duration(milliseconds: 600)),
                             builder: (context, snapshot) {
                               return TweenAnimationBuilder(
                                 tween: Tween(begin: 0.0, end: 1.0),
@@ -1488,20 +1486,23 @@ class _GameBoardState extends State<GameBoard> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => GameAnalysisScreen(
-                                          moveHistory: moveHistory,
-                                          isWhiteWinner: winner == 'White',
-                                          isStalemate: false,
-                                        ),
+                                        builder: (context) =>
+                                            GameAnalysisScreen(
+                                              moveHistory: moveHistory,
+                                              isWhiteWinner: winner == 'White',
+                                              isStalemate: false,
+                                            ),
                                       ),
                                     );
                                   },
-                                  icon: const Icon(Icons.analytics_rounded, size: 20),
+                                  icon: const Icon(Icons.analytics_rounded,
+                                      size: 20),
                                   label: const Text('Analysis'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue.shade600,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -1558,12 +1559,6 @@ class _GameBoardState extends State<GameBoard> {
       },
     );
   }
-
-
-
-
-
-
 
 // Helper method for building stat cards
   Widget _buildStatCard({
@@ -1626,8 +1621,6 @@ class _GameBoardState extends State<GameBoard> {
     );
   }
 
-
-
   Widget _buildStatRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1678,8 +1671,6 @@ class _GameBoardState extends State<GameBoard> {
       moveHistory.clear();
     });
   }
-
-
 
   void _resignGame() {
     if (isGameOver) return;
@@ -1770,7 +1761,8 @@ class _GameBoardState extends State<GameBoard> {
                     _buildResignStatRow(
                       icon: Icons.timer,
                       label: 'Game Duration:',
-                      value: _formatDuration(DateTime.now().difference(gameStartTime!)),
+                      value: _formatDuration(
+                          DateTime.now().difference(gameStartTime!)),
                     ),
                     const SizedBox(height: 8),
                     _buildResignStatRow(
@@ -1869,7 +1861,8 @@ class _GameBoardState extends State<GameBoard> {
   }
 
 // Helper method for stat rows in resign dialog
-  Widget _buildResignStatRow({required IconData icon, required String label, required String value}) {
+  Widget _buildResignStatRow(
+      {required IconData icon, required String label, required String value}) {
     return Row(
       children: [
         Icon(
@@ -1898,8 +1891,6 @@ class _GameBoardState extends State<GameBoard> {
       ],
     );
   }
-
-
 
   void _showNewGameDialog() {
     showDialog(
@@ -2571,7 +2562,8 @@ class _GameBoardState extends State<GameBoard> {
                                         crossAxisSpacing: 12,
                                         mainAxisSpacing: 12,
                                       ),
-                                      itemCount: min(backgroundThemes.length, 8), // Ensure we don't exceed available themes
+                                      itemCount: min(backgroundThemes.length,
+                                          8), // Ensure we don't exceed available themes
                                       itemBuilder: (context, index) {
                                         final isSelected =
                                             tempBackgroundTheme == index;
@@ -3140,7 +3132,8 @@ class _GameBoardState extends State<GameBoard> {
           ),
         ),
         title: Container(
-          padding: const EdgeInsets.only(left: 8), // Add left padding to position the icon
+          padding: const EdgeInsets.only(
+              left: 8), // Add left padding to position the icon
           alignment: Alignment.centerLeft, // Align to left
           child: Container(
             padding: const EdgeInsets.all(8),
@@ -3314,17 +3307,6 @@ class _GameBoardState extends State<GameBoard> {
         ],
       ),
 
-
-
-
-
-
-
-
-
-
-
-
       body: Stack(
         children: [
           // Confetti overlay
@@ -3399,8 +3381,6 @@ class _GameBoardState extends State<GameBoard> {
                   ),
                 ),
 
-
-
               // Game status and info
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -3429,10 +3409,13 @@ class _GameBoardState extends State<GameBoard> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: isWhiteTurn ? Colors.white : Colors.grey[800],
+                            color:
+                            isWhiteTurn ? Colors.white : Colors.grey[800],
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isWhiteTurn ? Colors.amber : Colors.grey[600]!,
+                              color: isWhiteTurn
+                                  ? Colors.amber
+                                  : Colors.grey[600]!,
                               width: 2,
                             ),
                           ),
@@ -3461,7 +3444,9 @@ class _GameBoardState extends State<GameBoard> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: isWhiteTurn ? Colors.white : Colors.grey[300],
+                                color: isWhiteTurn
+                                    ? Colors.white
+                                    : Colors.grey[300],
                                 shadows: [
                                   Shadow(
                                     blurRadius: 4,
@@ -3483,7 +3468,8 @@ class _GameBoardState extends State<GameBoard> {
                                       height: 12,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                        valueColor:
+                                        AlwaysStoppedAnimation<Color>(
                                           Colors.yellow[400]!,
                                         ),
                                       ),
@@ -3529,7 +3515,8 @@ class _GameBoardState extends State<GameBoard> {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: isPlayingAgainstAI
                                 ? Colors.blue.withOpacity(0.2)
@@ -3545,7 +3532,9 @@ class _GameBoardState extends State<GameBoard> {
                           child: Row(
                             children: [
                               Icon(
-                                isPlayingAgainstAI ? Icons.smart_toy : Icons.people,
+                                isPlayingAgainstAI
+                                    ? Icons.smart_toy
+                                    : Icons.people,
                                 size: 14,
                                 color: isPlayingAgainstAI
                                     ? Colors.blue[300]
@@ -3570,7 +3559,6 @@ class _GameBoardState extends State<GameBoard> {
                   ],
                 ),
               ),
-
 
               // White pieces taken
               SizedBox(
@@ -3762,12 +3750,11 @@ class _GameBoardState extends State<GameBoard> {
                 ),
               ),
 
-
-
 // Bottom action bar
 // Enhanced Bottom action bar
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                padding:
+                const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                 decoration: BoxDecoration(
                   color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
                   boxShadow: [
@@ -3817,7 +3804,9 @@ class _GameBoardState extends State<GameBoard> {
                     _buildEnhancedActionButton(
                       icon: Icons.undo,
                       label: 'Undo',
-                      color: moveHistory.isEmpty ? Colors.grey[600]! : Colors.orange[600]!,
+                      color: moveHistory.isEmpty
+                          ? Colors.grey[600]!
+                          : Colors.orange[600]!,
                       onPressed: moveHistory.isEmpty ? null : _undoMove,
                       isDisabled: moveHistory.isEmpty,
                     ),
@@ -3830,7 +3819,8 @@ class _GameBoardState extends State<GameBoard> {
                       onPressed: () {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const LoginScreen()),
                               (route) => false,
                         );
                       },
@@ -3839,13 +3829,6 @@ class _GameBoardState extends State<GameBoard> {
                   ],
                 ),
               ),
-
-
-
-
-
-
-
             ],
           ),
         ],
@@ -3900,9 +3883,8 @@ class _GameBoardState extends State<GameBoard> {
         },
       ),
     );
-  }}
-
-
+  }
+}
 
 class MoveHistory {
   ChessPiece? movedPiece;

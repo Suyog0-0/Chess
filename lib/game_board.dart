@@ -3252,6 +3252,7 @@ class _GameBoardState extends State<GameBoard> {
               color: isDarkMode ? Colors.white : Colors.black,
               size: 26,
             ),
+            color: isDarkMode ? Colors.grey[900] : Colors.white, // Container to be dark on dark mode, else white
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

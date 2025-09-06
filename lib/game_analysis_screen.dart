@@ -143,6 +143,7 @@ class _GameAnalysisScreenState extends State<GameAnalysisScreen>
     final move = widget.moveHistory[index];
     final isWhiteMove = index.isEven;
     final isSelected = _selectedMoveIndex == index;
+    final piece = move.movedPiece;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedMoveIndex = index),
@@ -164,6 +165,18 @@ class _GameAnalysisScreenState extends State<GameAnalysisScreen>
         ),
         child: Row(
           children: [
+            // Piece image
+            if (piece != null)
+              Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.only(right: 12),
+                child: Image.asset(
+                  piece.imagePath,
+                  color: piece.isWhite ? Colors.white : Colors.black,
+                ),
+              ),
+
             // Move number
             SizedBox(
               width: 36,
@@ -195,7 +208,6 @@ class _GameAnalysisScreenState extends State<GameAnalysisScreen>
       ),
     );
   }
-
   // ---------------------------------------------------------------------------
   //  QUALITY CHIP – MINI LABEL WITH COLOR
   // ---------------------------------------------------------------------------

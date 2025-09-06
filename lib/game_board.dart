@@ -1918,6 +1918,19 @@ class _GameBoardState extends State<GameBoard> {
           Navigator.pop(context);
           resetGame();
         },
+        onViewAnalysis: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GameAnalysisScreen(
+                moveHistory: moveHistory,
+                isWhiteWinner: !isWhiteTurn, // The opponent wins in resignation
+                isStalemate: false,
+              ),
+            ),
+          );
+        },
         onBackToMenu: () {
           Navigator.pop(context);
           Navigator.pushAndRemoveUntil(
@@ -1929,7 +1942,6 @@ class _GameBoardState extends State<GameBoard> {
       ),
     );
   }
-
 
 
   void _showNewGameDialog() {
@@ -3365,7 +3377,6 @@ class _GameBoardState extends State<GameBoard> {
           Column(
             children: [
               // Checkmate/Check status
-// Checkmate/Check status
               if (isGameOver && winner != null)
                 Container(
                   width: double.infinity,

@@ -10,6 +10,7 @@ class ResignationScreen extends StatefulWidget {
   final int blackPiecesCaptured;
   final bool wasPlayingAgainstAI;
   final VoidCallback onPlayAgain;
+  final VoidCallback onViewAnalysis; // NEW: Analysis callback
   final VoidCallback onBackToMenu;
 
   const ResignationScreen({
@@ -21,6 +22,7 @@ class ResignationScreen extends StatefulWidget {
     required this.blackPiecesCaptured,
     required this.wasPlayingAgainstAI,
     required this.onPlayAgain,
+    required this.onViewAnalysis, // NEW: Analysis callback
     required this.onBackToMenu,
   });
 
@@ -282,6 +284,12 @@ class _ResignationScreenState extends State<ResignationScreen>
                             icon: Icons.refresh_rounded,
                             label: 'Play Again',
                             color: Colors.green[700]!,
+                          ),
+                          _buildActionButton(
+                            onPressed: widget.onViewAnalysis, // NEW: Analysis button
+                            icon: Icons.analytics_rounded,
+                            label: 'Analysis',
+                            color: Colors.blue[700]!,
                           ),
                           _buildActionButton(
                             onPressed: widget.onBackToMenu,

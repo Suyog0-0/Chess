@@ -3666,11 +3666,12 @@ class _GameBoardState extends State<GameBoard> {
                                         board[row][col]!.isWhite != isWhiteTurn;
 
                                     // Check if this square is part of the hint
-                                    final isHintSquare = hintMove != null &&
-                                        ((row == hintMove![0] &&
-                                            col == hintMove![1]) ||
-                                            (row == hintMove![2] &&
-                                                col == hintMove![3]));
+                                    final isHintSource = hintMove != null &&
+                                        row == hintMove![0] &&
+                                        col == hintMove![1];
+                                    final isHintDestination = hintMove != null &&
+                                        row == hintMove![2] &&
+                                        col == hintMove![3];
 
                                     bool isKingInCheck = false;
                                     if (checkStatus) {
@@ -3702,7 +3703,8 @@ class _GameBoardState extends State<GameBoard> {
                                       isDarkMode: isDarkMode,
                                       boardColors:
                                       boardThemes[selectedBoardTheme],
-                                      isHint: isHintSquare,
+                                      isHintSource: isHintSource,
+                                      isHintDestination: isHintDestination,
                                     );
                                   },
                                 ),

@@ -11,7 +11,8 @@ class Square extends StatelessWidget {
   final bool isKingInCheck;
   final bool isDarkMode;
   final List<Color> boardColors;
-  final bool isHint; // New property for hint
+  final bool isHintSource;
+  final bool isHintDestination;
 
   const Square({
     super.key,
@@ -24,15 +25,16 @@ class Square extends StatelessWidget {
     this.isKingInCheck = false,
     this.isDarkMode = true,
     this.boardColors = const [Colors.grey, Colors.black],
-    this.isHint = false, // Default to false
+    this.isHintSource = false,
+    this.isHintDestination = false,
   });
 
   @override
   Widget build(BuildContext context) {
     Color? squareColor;
 
-    // Priority order: hint > king in check > selected > capturable > valid move > normal color
-    if (isHint) {
+    // Updated priority order: hint source/destination > king in check > selected > capturable > valid move > normal color
+    if (isHintSource || isHintDestination) {
       squareColor = Colors.blue[300]!.withOpacity(0.6);
     } else if (isKingInCheck) {
       squareColor = Colors.red[800];
@@ -49,27 +51,40 @@ class Square extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.zero, // Ensure no margin
+        margin: EdgeInsets.zero,
         decoration: BoxDecoration(
           color: squareColor,
           border: Border.all(
-            color:
-            squareColor!, // Use the same color as background to hide the border
-            width: 0.5, // Very thin border
+            color: squareColor!,
+            width: 0.5,
           ),
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            if (isValidMove && piece == null)
+            // Hint destination circle (only shown if not already a blue background)
+            if (isHintDestination && !isHintSource)
               Container(
-                width: 15,
-                height: 15,
+                width: 17,
+                height: 17,
+                decoration: BoxDecoration(
+                  color: Colors.indigo[900],
+                  shape: BoxShape.circle,
+                ),
+              ),
+
+            // Valid move indicator (for normal moves)
+            if (isValidMove && piece == null && !isHintDestination)
+              Container(
+                width: 17,
+                height: 17,
                 decoration: BoxDecoration(
                   color: Colors.green[900],
                   shape: BoxShape.circle,
                 ),
               ),
+
+            // Piece image
             if (piece != null)
               Container(
                 padding: const EdgeInsets.all(4),
